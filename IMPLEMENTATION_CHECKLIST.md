@@ -10,11 +10,11 @@ Use this checklist to track your progress implementing the coin purchase system.
 - [x] Verify no peer dependency warnings
 
 ### Code Review
-- [ ] Review `src/utils/purchases.js` - understand purchase flow
-- [ ] Review `src/screens/ShopScreen.js` - understand UI
-- [ ] Review changes to `App.js` - purchase initialization
-- [ ] Review changes to `ProgressContext.js` - addCoins export
-- [ ] Review changes to `HomeScreen.js` - Shop button
+- [x] Review `src/utils/purchases.js` - understand purchase flow
+- [x] Review `src/screens/ShopScreen.js` - understand UI
+- [x] Review changes to `App.js` - purchase initialization
+- [x] Review changes to `ProgressContext.js` - addCoins export
+- [x] Review changes to `HomeScreen.js` - Shop button
 
 ### Local Build
 - [x] Run `npm run lint` - fix any linting issues
@@ -89,14 +89,25 @@ Build notes (Mar 31, 2026):
 
 ## Phase 3: Android Configuration (Google Play) 🤖
 
+> **Note (Apr 2, 2026):** All 5 product IDs and `app.json` plugin config are already set in code.
+> The steps below are the Google Play Console steps the _developer_ must complete manually.
+
 ### Account Setup
 - [ ] Log into [Google Play Console](https://play.google.com/console)
-- [ ] Select your Bible Trivia app
-- [ ] Verify app information is complete
+- [ ] Select your Bible Trivia app (or create it under "Create app")
+- [ ] Under **Setup → App content**, complete all required sections
+- [ ] Under **Setup → App integrity**, upload your keystore / set signing
+
+### Upload a Build First (required before creating IAP)
+> Google Play requires at least one APK/AAB uploaded to a track before In-app products can be saved.
+- [ ] Run `eas build --platform android --profile preview`
+- [ ] In Play Console: go to **Testing → Internal testing**
+- [ ] Click "Create new release", upload the `.aab` EAS produced
+- [ ] Save the release (does not need to be published yet)
 
 ### Create In-App Products
-- [ ] Navigate to: Monetize → Products → In-app products
-- [ ] Click "Create product"
+- [ ] Navigate to: **Monetize → Products → In-app products**
+- [ ] Click **"Create product"**
 
 #### Product 1: 250 Coins
 - [ ] Product type: **Managed Product**
@@ -139,10 +150,12 @@ Build notes (Mar 31, 2026):
 - [ ] Save
 
 ### Test Setup
-- [ ] Go to Settings → License Testing
-- [ ] Add your test email address
-- [ ] Create internal test track
-- [ ] Upload test build to internal testing
+- [ ] Go to **Setup → License testing** (top-level Settings in Play Console)
+- [ ] Add your Google account email as a license tester
+  > This lets you make real purchases without being charged
+- [ ] Ensure tester builds are installed via **Internal testing** track (not sideloaded)
+- [ ] On Android: purchases appear immediately once products are **Active** and tester is enrolled
+  > Unlike iOS, there is no 24-hour wait on Android
 
 ## Phase 4: App Configuration 📱
 
