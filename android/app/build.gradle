@@ -96,6 +96,13 @@ android {
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+
+        manifestPlaceholders = [
+            appJSONGoogleMobileAdsAppID: "ca-app-pub-2269638303600030~1530181074",
+            appJSONGoogleMobileAdsDelayAppMeasurementInit: false,
+            appJSONGoogleMobileAdsOptimizeInitialization: true,
+            appJSONGoogleMobileAdsOptimizeAdLoading: true
+        ]
     }
     signingConfigs {
         debug {

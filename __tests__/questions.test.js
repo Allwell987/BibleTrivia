@@ -67,6 +67,16 @@ describe('Questions Data', () => {
       expect(typeof q.explanation).toBe('string');
     });
   });
+
+  test('all questions should include insight and reflection content', () => {
+    const allQuestions = [...QUESTIONS.easy, ...QUESTIONS.medium, ...QUESTIONS.hard, ...QUESTIONS.expert];
+    allQuestions.forEach(q => {
+      expect(typeof q.insight).toBe('string');
+      expect(q.insight.trim().length).toBeGreaterThan(0);
+      expect(typeof q.reflection).toBe('string');
+      expect(q.reflection.trim().length).toBeGreaterThan(0);
+    });
+  });
 });
 
 describe('Categories', () => {

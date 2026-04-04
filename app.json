@@ -4,51 +4,13 @@
     "slug": "bibletrivia",
     "version": "1.0.0",
     "sdkVersion": "55.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#0F0D0A",
-      "image": "./assets/splash-icon.png"
-    },
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.bibletrivia.app",
-      "infoPlist": {
-        "CFBundleDisplayName": "Bible Trivia",
-        "UILaunchStoryboardName": "SplashScreen",
-        "NSPrivacyURL": "https://your-domain.com/privacy-policy",
-        "NSPrivacyAccessedAPITypes": [
-          "NSPrivacyAccessedAPICategoryUserDefaults"
-        ]
-      }
+      "bundleIdentifier": "com.iguruapp.bibletrivia"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#0F0D0A",
-        "foregroundImage": "./assets/adaptive-icon.png"
-      },
-      "package": "com.bibletrivia.app",
-      "versionCode": 1,
-      "permissions": [
-        "android.permission.VIBRATE",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ]
-    },
-    "web": {
-      "favicon": "./assets/icon.png"
+      "package": "com.bibletrivia.app"
     },
     "plugins": [
-      [
-        "expo-audio",
-        {
-          "microphonePermission": false
-        }
-      ],
       [
         "react-native-iap",
         {
@@ -68,11 +30,21 @@
           ]
         }
       ],
-      "expo-asset",
-      "expo-font",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2269638303600030~1530181074",
+          "iosAppId": "ca-app-pub-2269638303600030~3719232270"
+        }
+      ],
+      "expo-secure-store",
+      "expo-audio",
       "expo-video",
       "expo-web-browser"
     ],
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
     "extra": {
       "eas": {
         "projectId": "6bbd4f40-2fec-4ee4-a02f-968da7251d72"

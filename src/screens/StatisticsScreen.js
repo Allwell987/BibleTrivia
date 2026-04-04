@@ -1,24 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { loadStats, loadStreak } from '../utils/storage';
+import { useProgress } from '../context/ProgressContext';
 import { trackEvent } from '../utils/analytics';
 
 export default function StatisticsScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
-  const [stats, setStats] = useState(null);
-  const [streak, setStreak] = useState(null);
+  const { progress, loading } = useProgress();
 
-  useEffect(() => {
-    Promise.all([loadStats(), loadStreak()]).then(([s, st]) => {
-      setStats(s);
-      setStreak(st);
-    });
-  }, []);
+  // Build the same shape the display code already expects — from the single source of truth
+  const totalQuizzes =
+    (progress.easyCompleted || 0) +
+    (progress.mediumCompleted || 0) +
+    (progress.hardCompleted || 0) +
+    (progress.expertCompleted || 0) +
+    (progress.dailyChallengesCompleted || 0);
 
-  const styles = createStyles(colors);
+  const stats = {
+    totalQuizzes,
+    totalCorrect: progress.totalCorrect || 0,
+    totalQuestions: progress.totalQuestionsAnswered || 0,
+    perfectScores: progress.perfectScores || 0,
+    easyCorrect: progress.easyCorrect || 0,
+    easyTotal: progress.easyTotal || 0,
+    mediumCorrect: progress.mediumCorrect || 0,
+    mediumTotal: progress.mediumTotal || 0,
+    hardCorrect: progress.hardCorrect || 0,
+    hardTotal: progress.hardTotal || 0,
+    lastPlayed: progress.lastPlayed || null,
+    favoriteDifficulty: (() => {
+      const counts = {
+        easy: progress.easyTotal || 0,
+        medium: progress.mediumTotal || 0,
+        hard: progress.hardTotal || 0,
+      };
+      const max = Object.entries(counts).reduce((a, b) => b[1] > a[1] ? b : a);
+      return max[1] > 0 ? max[0] : null;
+    })(),
+  };
+
+  const streak = {
+    currentStreak: progress.currentStreak || 0,
+    longestStreak: progress.highestStreak || 0,
+  };
 
   const getAccuracy = (correct, total) => {
     if (total === 0) return 0;
@@ -26,41 +52,42 @@ export default function StatisticsScreen({ navigation }) {
   };
 
   const getOverallAccuracy = () => {
-    if (!stats || stats.totalQuestions === 0) return 0;
+    if (stats.totalQuestions === 0) return 0;
     return getAccuracy(stats.totalCorrect, stats.totalQuestions);
   };
 
-  const getDifficultyBreakdown = () => {
-    const data = [
-      {
-        key: 'easy',
-        label: 'Easy',
-        color: '#4CAF82',
-        total: stats.easyTotal,
-        accuracy: getAccuracy(stats.easyCorrect, stats.easyTotal),
-      },
-      {
-        key: 'medium',
-        label: 'Medium',
-        color: '#E6A817',
-        total: stats.mediumTotal,
-        accuracy: getAccuracy(stats.mediumCorrect, stats.mediumTotal),
-      },
-      {
-        key: 'hard',
-        label: 'Hard',
-        color: '#D95F4B',
-        total: stats.hardTotal,
-        accuracy: getAccuracy(stats.hardCorrect, stats.hardTotal),
-      },
-    ];
-    return data;
-  };
+  const getDifficultyBreakdown = () => [
+    { key: 'easy',   label: 'Easy',   color: '#4CAF82', total: stats.easyTotal,   accuracy: getAccuracy(stats.easyCorrect,   stats.easyTotal)   },
+    { key: 'medium', label: 'Medium', color: '#E6A817', total: stats.mediumTotal, accuracy: getAccuracy(stats.mediumCorrect, stats.mediumTotal) },
+    { key: 'hard',   label: 'Hard',   color: '#D95F4B', total: stats.hardTotal,   accuracy: getAccuracy(stats.hardCorrect,   stats.hardTotal)   },
+  ];
 
   const getConsistency = () => {
     if (!streak.longestStreak) return 0;
     return Math.round((streak.currentStreak / streak.longestStreak) * 100);
   };
+
+  const styles = createStyles(colors);
+
+  const diffBreakdown = getDifficultyBreakdown();
+  const totalDifficultyQuestions = diffBreakdown.reduce((sum, d) => sum + d.total, 0);
+  const bestDifficulty = [...diffBreakdown].sort((a, b) => b.accuracy - a.accuracy)[0];
+  const needsWorkDifficulty = [...diffBreakdown].sort((a, b) => a.accuracy - b.accuracy)[0];
+  const consistency = getConsistency();
+
+  // useEffect must come before any conditional return (Rules of Hooks)
+  useEffect(() => {
+    if (loading) return;
+    trackEvent('statistics_viewed', {
+      total_quizzes: stats.totalQuizzes,
+      total_questions: stats.totalQuestions,
+      overall_accuracy: getOverallAccuracy(),
+      current_streak: streak.currentStreak,
+      longest_streak: streak.longestStreak,
+      strongest_difficulty: bestDifficulty.label.toLowerCase(),
+      needs_practice_difficulty: needsWorkDifficulty.label.toLowerCase(),
+    });
+  }, [loading]);
 
   const StatCard = ({ label, value, icon, color }) => (
     <View style={[styles.statCard, { borderColor: color || colors.border }]}>
@@ -86,25 +113,7 @@ export default function StatisticsScreen({ navigation }) {
     );
   };
 
-  if (!stats || !streak) return null;
-
-  const diffBreakdown = getDifficultyBreakdown();
-  const totalDifficultyQuestions = diffBreakdown.reduce((sum, d) => sum + d.total, 0);
-  const bestDifficulty = [...diffBreakdown].sort((a, b) => b.accuracy - a.accuracy)[0];
-  const needsWorkDifficulty = [...diffBreakdown].sort((a, b) => a.accuracy - b.accuracy)[0];
-  const consistency = getConsistency();
-
-  useEffect(() => {
-    trackEvent('statistics_viewed', {
-      total_quizzes: stats.totalQuizzes,
-      total_questions: stats.totalQuestions,
-      overall_accuracy: getOverallAccuracy(),
-      current_streak: streak.currentStreak,
-      longest_streak: streak.longestStreak,
-      strongest_difficulty: bestDifficulty.label.toLowerCase(),
-      needs_practice_difficulty: needsWorkDifficulty.label.toLowerCase(),
-    });
-  }, [stats, streak]);
+  if (loading) return null;
 
   return (
     <SafeAreaView style={styles.container}>

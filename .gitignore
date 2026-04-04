@@ -3,8 +3,6 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-yarn.lock
 
 # Expo
 .expo/
@@ -22,6 +20,10 @@ web-build/
 android/app/build/
 android/.gradle/
 android/app/release/
+android/app/src/main/assets/
+android/app/src/main/res/drawable-*/node_modules_reactnavigation_elements_lib_module_assets_*.png
+android/app/src/main/res/raw/assets_sounds_*.wav
+android/app/src/main/res/raw/keep.xml
 ios/Pods/
 ios/build/
 

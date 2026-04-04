@@ -3,15 +3,17 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Replace these with your actual Firebase project configuration
+const getEnvOrPlaceholder = (key, placeholder) => process.env[key] || placeholder;
+
+// Configure Firebase with EXPO_PUBLIC_* values from .env.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: getEnvOrPlaceholder('EXPO_PUBLIC_FIREBASE_API_KEY', 'YOUR_API_KEY'),
+  authDomain: getEnvOrPlaceholder('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN', 'your-project-id.firebaseapp.com'),
+  projectId: getEnvOrPlaceholder('EXPO_PUBLIC_FIREBASE_PROJECT_ID', 'your-project-id'),
+  storageBucket: getEnvOrPlaceholder('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET', 'your-project-id.appspot.com'),
+  messagingSenderId: getEnvOrPlaceholder('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', 'YOUR_MESSAGING_SENDER_ID'),
+  appId: getEnvOrPlaceholder('EXPO_PUBLIC_FIREBASE_APP_ID', 'YOUR_APP_ID'),
+  measurementId: getEnvOrPlaceholder('EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID', 'YOUR_MEASUREMENT_ID')
 };
 
 const isPlaceholderValue = (value) =>

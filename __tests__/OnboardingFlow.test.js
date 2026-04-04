@@ -2,9 +2,20 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import OnboardingScreen from '../src/screens/OnboardingScreen';
 import { setOnboarded } from '../src/utils/storage';
+import { requestNotificationPermission } from '../src/utils/notifications';
 
 jest.mock('../src/utils/storage', () => ({
   setOnboarded: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('../src/utils/notifications', () => ({
+  requestNotificationPermission: jest.fn(() => Promise.resolve({ granted: false, status: 'unavailable' })),
+}));
+
+jest.mock('../src/context/ProgressContext', () => ({
+  useProgress: () => ({
+    setKnowledgeLevel: jest.fn(() => Promise.resolve()),
+  }),
 }));
 
 jest.mock('../src/context/ThemeContext', () => ({
@@ -32,7 +43,8 @@ describe('Onboarding flow', () => {
 
     await waitFor(() => {
       expect(setOnboarded).toHaveBeenCalledWith(true);
-      expect(navigation.replace).toHaveBeenCalledWith('Home');
+      expect(requestNotificationPermission).toHaveBeenCalled();
+      expect(navigation.replace).toHaveBeenCalledWith('Quiz', { difficulty: 'mixed', seconds: 15, isDaily: true });
     });
   });
 });

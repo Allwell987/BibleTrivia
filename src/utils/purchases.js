@@ -1,288 +1,250 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import Purchases from 'react-native-purchases';
+import PurchasesHolder from 'react-native-purchases-ui';
 
-// Set EXPO_PUBLIC_USE_MOCK_PURCHASES=true in .env for local-only mock flows.
-const USE_MOCK_PURCHASES = process.env.EXPO_PUBLIC_USE_MOCK_PURCHASES === 'true';
+// Configuration
+const REVENUECAT_API_KEY = Platform.select({
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || 'test_xtrPxefMVMPmKKIkehsdrglhlNZ',
+  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || 'test_xtrPxefMVMPmKKIkehsdrglhlNZ',
+});
 
-let iapAvailable = false;
+const isInvalidRevenueCatKey = (key) =>
+  !key ||
+  typeof key !== 'string' ||
+  key.startsWith('test_') ||
+  key.includes('YOUR_');
 
-// Only import react-native-iap if not in mock mode
-let iapModule = null;
-if (!USE_MOCK_PURCHASES) {
-  try {
-    iapModule = require('react-native-iap');
-  } catch (error) {
-    console.warn('react-native-iap not available, falling back to mock mode');
-  }
-}
-
-export const COIN_PRODUCTS = {
-  ios: [
-    'com.iguruapp.bibletrivia.coins_250',
-    'com.iguruapp.bibletrivia.coins_500',
-    'com.iguruapp.bibletrivia.coins_1200',
-    'com.iguruapp.bibletrivia.coins_3000',
-    'com.iguruapp.bibletrivia.coins_7500',
-  ],
-  android: [
-    'com.iguruapp.bibletrivia.coins_250',
-    'com.iguruapp.bibletrivia.coins_500',
-    'com.iguruapp.bibletrivia.coins_1200',
-    'com.iguruapp.bibletrivia.coins_3000',
-    'com.iguruapp.bibletrivia.coins_7500',
-  ],
-};
-
-// Mapping of product IDs to coin amounts and prices
-export const PRODUCT_CONFIG = {
-  'com.iguruapp.bibletrivia.coins_250': { coins: 250, price: '$0.50', title: '250 Coins' },
-  'com.iguruapp.bibletrivia.coins_500': { coins: 500, price: '$0.99', title: '500 Coins' },
-  'com.iguruapp.bibletrivia.coins_1200': { coins: 1200, price: '$2.99', title: '1,200 Coins' },
-  'com.iguruapp.bibletrivia.coins_3000': { coins: 3000, price: '$4.99', title: '3,000 Coins' },
-  'com.iguruapp.bibletrivia.coins_7500': { coins: 7500, price: '$9.99', title: '7,500 Coins' },
-};
-
+const ENTITLEMENT_ID = 'Allwell Pro';
 const PURCHASES_KEY = 'bible_trivia_purchases';
+
+export const PRODUCT_CONFIG = {
+  'com.iguruapp.bibletrivia.coins_250': { coins: 250 },
+  'com.iguruapp.bibletrivia.coins_500': { coins: 500 },
+  'com.iguruapp.bibletrivia.coins_1200': { coins: 1200 },
+  'com.iguruapp.bibletrivia.coins_3000': { coins: 3000 },
+  'com.iguruapp.bibletrivia.coins_7500': { coins: 7500 },
+  // Pro versions
+  'com.iguruapp.bibletrivia.pro_monthly': { isPro: true },
+  'com.iguruapp.bibletrivia.pro_yearly': { isPro: true },
+  'com.iguruapp.bibletrivia.pro_lifetime': { isPro: true },
+};
 
 let connectionInitialized = false;
 
 /**
- * Get mock product data for development
+ * Initialize RevenueCat SDK
  */
-function getMockProducts() {
-  return COIN_PRODUCTS[Platform.OS].map(productId => ({
-    productId,
-    title: PRODUCT_CONFIG[productId].title,
-    description: `Get ${PRODUCT_CONFIG[productId].coins} coins`,
-    price: PRODUCT_CONFIG[productId].price,
-    currency: 'USD',
-    localizedPrice: PRODUCT_CONFIG[productId].price,
-  }));
-}
-
-/**
- * Initialize the IAP connection (or mock purchases)
- */
-export async function initializePurchases() {
+export async function initializePurchases(userId) {
   try {
     if (connectionInitialized) return true;
 
-    if (USE_MOCK_PURCHASES) {
-      console.log('🧪 Mock purchases enabled (development mode)');
-      connectionInitialized = true;
-      return true;
+    if (!__DEV__ && isInvalidRevenueCatKey(REVENUECAT_API_KEY)) {
+      console.error('⚠️ RevenueCat initialization blocked: missing production API key.');
+      return false;
     }
 
-    if (!iapModule) {
-      console.log('🧪 react-native-iap not available, using mock purchases');
-      connectionInitialized = true;
-      return true;
-    }
-
-    const { initConnection } = iapModule;
-    await initConnection();
-    iapAvailable = true;
-    connectionInitialized = true;
-    console.log('✅ Real IAP connection initialized');
-    return true;
-  } catch (error) {
-    console.warn('⚠️ Failed to initialize real purchases, falling back to mock:', error.message);
-    connectionInitialized = true;
-    return true;
-  }
-}
-
-/**
- * Get available coin packages
- */
-export async function getAvailableCoinPackages() {
-  try {
-    // Use mock products in development mode or if real IAP unavailable
-    if (USE_MOCK_PURCHASES || !iapAvailable || !iapModule) {
-      return getMockProducts().map(product => ({
-        productId: product.productId,
-        title: product.title,
-        description: product.description,
-        price: product.price,
-        coins: PRODUCT_CONFIG[product.productId]?.coins || 0,
-        currencyCode: 'USD',
-        currency: 'USD',
-      }));
-    }
-
-    const { getProducts } = iapModule;
-    const platformProducts = COIN_PRODUCTS[Platform.OS] || COIN_PRODUCTS.ios;
-    const products = await getProducts({ skus: platformProducts });
-
-    return products
-      .map(product => ({
-        productId: product.productId,
-        title: product.title,
-        description: product.description,
-        price: product.localizedPrice,
-        coins: PRODUCT_CONFIG[product.productId]?.coins || 0,
-        currencyCode: product.currencyCode,
-        currency: product.currency,
-      }))
-      .sort((a, b) => a.coins - b.coins);
-  } catch (error) {
-    console.error('Failed to get coin packages:', error);
-    // Fall back to mock products
-    return getMockProducts();
-  }
-}
-
-/**
- * Purchase a coin package
- */
-export async function purchaseCoinPackage(productId) {
-  try {
-    const coins = PRODUCT_CONFIG[productId]?.coins || 0;
-
-    if (!coins) {
-      return {
-        success: false,
-        error: 'Invalid product',
-      };
-    }
-
-    // Mock purchase flow
-    if (USE_MOCK_PURCHASES || !iapAvailable || !iapModule) {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Store purchase record
-      await storePurchase({
-        productId,
-        transactionId: `mock_${Date.now()}`,
-        purchaseTime: new Date().toISOString(),
-        coins,
-        isMock: true,
-      });
-
-      console.log(`🧪 Mock purchase: ${coins} coins added`);
-      return {
-        success: true,
-        coins,
-        isMock: true,
-      };
-    }
-
-    // Real IAP purchase flow
-    const { requestPurchase, acknowledgePurchaseAndroid } = iapModule;
-
-    const purchase = await requestPurchase({
-      sku: productId,
-      andDangerouslyFinishTransactionAutomatically: false,
+    // Configure RevenueCat
+    Purchases.configure({
+      apiKey: REVENUECAT_API_KEY,
+      appUserID: userId || null
     });
 
-    // Store purchase record
-    await storePurchase({
-      productId,
-      transactionId: purchase.transactionId,
-      purchaseTime: new Date().toISOString(),
-      coins,
-    });
-
-    // Handle platform-specific acknowledgment
-    if (Platform.OS === 'android' && iapModule.acknowledgePurchaseAndroid) {
-      await iapModule.acknowledgePurchaseAndroid({ token: purchase.purchaseToken });
+    // Enable debug logs in development
+    if (__DEV__) {
+      await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     }
 
-    console.log(`✅ Real purchase: ${coins} coins added`);
-    return {
-      success: true,
-      coins,
-      purchase,
-    };
+    connectionInitialized = true;
+    console.log('✅ RevenueCat initialized');
+    return true;
   } catch (error) {
-    console.error('Purchase failed:', error);
-    return {
-      success: false,
-      error: error.message,
-    };
+    console.error('⚠️ Failed to initialize RevenueCat:', error.message);
+    return false;
   }
 }
 
 /**
- * Get purchase history
+ * Check if user has active "Allwell Pro" entitlement
  */
-export async function getPurchaseHistory() {
+export async function checkProStatus() {
   try {
-    const history = await AsyncStorage.getItem(PURCHASES_KEY);
-    return history ? JSON.parse(history) : [];
-  } catch (error) {
-    console.error('Failed to get purchase history:', error);
+    const customerInfo = await Purchases.getCustomerInfo();
+    return !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+  } catch (e) {
+    console.error('Error checking pro status:', e);
+    return false;
+  }
+}
+
+/**
+ * Fetch available offerings (Monthly, Yearly, Lifetime)
+ */
+export async function getOfferings() {
+  try {
+    const offerings = await Purchases.getOfferings();
+    if (offerings.current !== null) {
+      return offerings.current.availablePackages;
+    }
+    return [];
+  } catch (e) {
+    console.error('Error fetching offerings:', e);
     return [];
   }
 }
 
 /**
- * Store a purchase record
+ * Legacy/Helper for ShopScreen to get pro offerings specifically
  */
-async function storePurchase(purchaseData) {
+export async function getProOfferings() {
   try {
-    const history = await getPurchaseHistory();
-    history.push(purchaseData);
-    await AsyncStorage.setItem(PURCHASES_KEY, JSON.stringify(history));
-  } catch (error) {
-    console.error('Failed to store purchase:', error);
+    const offerings = await Purchases.getOfferings();
+    if (offerings.current !== null) {
+      // Return packages that are marked as pro in our config
+      return offerings.current.availablePackages
+        .filter(pkg => PRODUCT_CONFIG[pkg.product.identifier]?.isPro)
+        .map(pkg => ({
+          productId: pkg.product.identifier,
+          title: pkg.product.title,
+          price: pkg.product.priceString,
+          package: pkg
+        }));
+    }
+    return [];
+  } catch (e) {
+    console.error('Error fetching pro offerings:', e);
+    return [];
   }
 }
 
 /**
- * Restore purchases (for users who reinstalled app)
+ * Fetch available coin packages
+ * In RevenueCat, these can be in a separate offering or just products
  */
-export async function restorePurchases() {
+export async function getAvailableCoinPackages() {
   try {
-    // Mock restore (just return stored purchases)
-    if (USE_MOCK_PURCHASES || !iapAvailable || !iapModule) {
-      const history = await getPurchaseHistory();
-      const totalCoins = history.reduce((sum, p) => sum + (p.coins || 0), 0);
-      
-      console.log(`🧪 Mock restore: ${totalCoins} coins from ${history.length} purchases`);
-      return {
-        success: true,
-        coinsRestored: totalCoins,
-        purchaseCount: history.length,
-        isMock: true,
-      };
+    const offerings = await Purchases.getOfferings();
+    if (offerings.current !== null) {
+      return offerings.current.availablePackages
+        .filter(pkg => PRODUCT_CONFIG[pkg.product.identifier]?.coins)
+        .map(pkg => ({
+          productId: pkg.product.identifier,
+          title: pkg.product.title,
+          price: pkg.product.priceString,
+          coins: PRODUCT_CONFIG[pkg.product.identifier].coins,
+          package: pkg
+        }));
+    }
+    return [];
+  } catch (e) {
+    console.error('Error fetching coin packages:', e);
+    return [];
+  }
+}
+
+/**
+ * Purchase a package
+ */
+export async function purchaseProduct(pkgOrId) {
+  try {
+    let purchaseResult;
+    if (typeof pkgOrId === 'string') {
+      // If it's just an ID, we need to find the package or use purchaseStoreProduct
+      // For simplicity in ShopScreen, we usually pass the package object
+      purchaseResult = await Purchases.purchaseStoreProduct(pkgOrId);
+    } else if (pkgOrId.package) {
+      purchaseResult = await Purchases.purchasePackage(pkgOrId.package);
+    } else {
+      purchaseResult = await Purchases.purchasePackage(pkgOrId);
     }
 
-    // Real IAP restore
-    const { getAvailablePurchases, acknowledgePurchaseAndroid } = iapModule;
-    const purchases = await getAvailablePurchases();
-    let totalCoinsRestored = 0;
+    const { customerInfo } = purchaseResult;
+    const isPro = !!customerInfo.entitlements.active[ENTITLEMENT_ID];
 
-    for (const purchase of purchases) {
-      if (PRODUCT_CONFIG[purchase.productId]) {
-        totalCoinsRestored += PRODUCT_CONFIG[purchase.productId].coins;
-      }
+    // Identify if it was a coin purchase
+    const productId = typeof pkgOrId === 'string' ? pkgOrId : (pkgOrId.productId || pkgOrId.product.identifier);
+    const coins = PRODUCT_CONFIG[productId]?.coins || 0;
 
-      // Acknowledge on Android
-      if (Platform.OS === 'android' && iapModule.acknowledgePurchaseAndroid) {
-        try {
-          await iapModule.acknowledgePurchaseAndroid({ token: purchase.purchaseToken });
-        } catch (e) {
-          console.warn('Failed to acknowledge purchase:', e);
-        }
-      }
-    }
-
-    console.log(`✅ Real restore: ${totalCoinsRestored} coins from ${purchases.length} purchases`);
     return {
       success: true,
-      coinsRestored: totalCoinsRestored,
-      purchaseCount: purchases.length,
+      isPro,
+      coins,
+      customerInfo,
     };
   } catch (error) {
-    console.error('Failed to restore purchases:', error);
+    if (!error.userCancelled) {
+      console.error('Purchase error:', error);
+    }
     return {
       success: false,
       error: error.message,
+      cancelled: error.userCancelled
     };
   }
 }
 
-export const COIN_PACKAGES = PRODUCT_CONFIG;
+/**
+ * Alias for purchaseProduct to match some older calls
+ */
+export async function purchaseCoinPackage(productId) {
+  return purchaseProduct(productId);
+}
 
+/**
+ * Restore previous purchases
+ */
+export async function restorePurchases() {
+  try {
+    const customerInfo = await Purchases.restorePurchases();
+    const isProRestored = !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+
+    // For coins, RevenueCat doesn't "restore" consumables in the traditional sense
+    // to the UI balance automatically, but we can check nonSubscriptionTransactions
+    return {
+      success: true,
+      isProRestored,
+      customerInfo,
+      coinsRestored: 0 // Consumables are usually handled differently
+    };
+  } catch (error) {
+    console.error('Restore error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Show RevenueCat Paywall
+ */
+export async function presentPaywall() {
+  try {
+    // Returns true if purchase was successful
+    await PurchasesHolder.presentPaywall();
+    const customerInfo = await Purchases.getCustomerInfo();
+    return !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+  } catch (e) {
+    console.error('Paywall error:', e);
+    return false;
+  }
+}
+
+/**
+ * Show Customer Center (for subscription management)
+ */
+export async function presentCustomerCenter() {
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    try {
+      await PurchasesHolder.presentCustomerCenter();
+    } catch (e) {
+      console.error('Customer Center error:', e);
+    }
+  }
+}
+
+export async function getPurchaseHistory() {
+  try {
+    const history = await AsyncStorage.getItem(PURCHASES_KEY);
+    return history ? JSON.parse(history) : [];
+  } catch (error) {
+    return [];
+  }
+}

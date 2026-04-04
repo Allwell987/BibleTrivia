@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { ThemeProvider } from './src/context/ThemeContext';
 import { ProgressProvider } from './src/context/ProgressContext';
@@ -14,7 +15,8 @@ import { loadSettings } from './src/utils/storage';
 import { setHapticsEnabled } from './src/utils/haptics';
 import { trackScreenView } from './src/utils/analytics';
 import { initializePurchases } from './src/utils/purchases';
-// import { initAds } from './src/utils/ads';
+import { initAds } from './src/utils/ads';
+import { logStartupConfigHealth } from './src/utils/configHealth';
 
 import HomeScreen from './src/screens/HomeScreen';
 import QuizScreen from './src/screens/QuizScreen';
@@ -26,9 +28,18 @@ import AchievementsScreen from './src/screens/AchievementsScreen';
 import ChallengeScreen from './src/screens/ChallengeScreen';
 import ShopScreen from './src/screens/ShopScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import CustomQuizScreen from './src/screens/CustomQuizScreen';
+import JourneyScreen from './src/screens/JourneyScreen';
+import CollectionScreen from './src/screens/CollectionScreen';
+import ReflectionsScreen from './src/screens/ReflectionsScreen';
 import { isOnboarded } from './src/utils/storage';
 
 const Stack = createNativeStackNavigator();
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading the app might trigger some race conditions, ignore them */
+});
 
 function AppNavigator() {
   const [isOnboard, setIsOnboard] = useState(null);
@@ -52,6 +63,9 @@ function AppNavigator() {
     >
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Journey" component={JourneyScreen} />
+      <Stack.Screen name="Collection" component={CollectionScreen} />
+      <Stack.Screen name="Reflections" component={ReflectionsScreen} />
       <Stack.Screen name="Quiz" component={QuizScreen} />
       <Stack.Screen name="Result" component={ResultScreen} />
       <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
@@ -60,28 +74,53 @@ function AppNavigator() {
       <Stack.Screen name="Achievements" component={AchievementsScreen} />
       <Stack.Screen name="Challenge" component={ChallengeScreen} />
       <Stack.Screen name="Shop" component={ShopScreen} />
+      <Stack.Screen name="CustomQuiz" component={CustomQuizScreen} />
     </Stack.Navigator>
   );
 }
 
 export default function App() {
+  const [appIsReady, setAppIsReady] = useState(false);
   const [boundaryKey, setBoundaryKey] = useState(0);
   const navigationRef = useNavigationContainerRef();
   const routeNameRef = useRef();
 
   useEffect(() => {
-    loadSounds();
-    // initAds();
-    initializePurchases().catch(e => console.warn('Failed to initialize purchases:', e));
+    async function prepare() {
+      try {
+        await Promise.all([
+          loadSounds(),
+          initAds(),
+          initializePurchases().catch(e => console.warn('Failed to initialize purchases:', e)),
+          loadSettings().then(settings => {
+            setHapticsEnabled(settings.hapticEnabled);
+          })
+        ]);
+        logStartupConfigHealth();
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
 
-    loadSettings().then(settings => {
-      setHapticsEnabled(settings.hapticEnabled);
-    });
+    prepare();
 
     return () => {
       unloadSounds();
     };
   }, []);
+
+  useEffect(() => {
+    if (appIsReady) {
+      // Hide the splash screen once we are ready
+      SplashScreen.hideAsync().catch(console.warn);
+    }
+  }, [appIsReady]);
+
+  if (!appIsReady) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>

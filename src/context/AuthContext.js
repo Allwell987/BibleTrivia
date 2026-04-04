@@ -19,8 +19,8 @@ WebBrowser.maybeCompleteAuthSession();
 
 const AuthContext = createContext();
 const GOOGLE_CLIENT_IDS = {
-  iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
-  androidClientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
 };
 
 const isConfiguredClientId = (clientId) => clientId && !clientId.startsWith('YOUR_');

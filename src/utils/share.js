@@ -16,15 +16,16 @@ function getGrade(pct) {
   return GRADES.keepTrying;
 }
 
-export async function shareResults({ score, total, difficulty, pct, playerName }) {
+export async function shareResults({ score, total, difficulty, pct, playerName, didYouKnowFact = '' }) {
   const grade = getGrade(pct);
-  
+  const factLine = didYouKnowFact ? `\n\nDid you know? ${didYouKnowFact}` : '';
+
   const messages = {
-    android: `📖 Bible Trivia Results 📖\n\n${playerName} scored ${score}/${total} (${pct}%) on ${difficulty.toUpperCase()} mode!\n\n${grade.emoji} ${grade.text}\n\nTest your Bible knowledge!\n\n#BibleTrivia #Scripture #Faith`,
+    android: `📖 Bible Trivia Results 📖\n\n${playerName} scored ${score}/${total} (${pct}%) on ${difficulty.toUpperCase()} mode!\n\n${grade.emoji} ${grade.text}${factLine}\n\nTest your Bible knowledge!\n\n#BibleTrivia #Scripture #Faith`,
 
-    ios: `📖 Bible Trivia Results 📖\n\n${playerName} scored ${score}/${total} (${pct}%) on ${difficulty.toUpperCase()} mode!\n\n${grade.emoji} ${grade.text}\n\nTest your Bible knowledge! #BibleTrivia`,
+    ios: `📖 Bible Trivia Results 📖\n\n${playerName} scored ${score}/${total} (${pct}%) on ${difficulty.toUpperCase()} mode!\n\n${grade.emoji} ${grade.text}${factLine}\n\nTest your Bible knowledge! #BibleTrivia`,
 
-    generic: `I just scored ${score}/${total} (${pct}%) on ${difficulty} Bible Trivia! ${grade.emoji} ${grade.text}\n\nTest your knowledge of Scripture! Download the Bible Trivia App.`,
+    generic: `I just scored ${score}/${total} (${pct}%) on ${difficulty} Bible Trivia! ${grade.emoji} ${grade.text}${factLine}\n\nTest your knowledge of Scripture! Download the Bible Trivia App.`,
   };
 
   const message = Platform.OS === 'android' ? messages.android : messages.ios;

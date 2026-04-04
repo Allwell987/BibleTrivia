@@ -46,7 +46,7 @@
    - Platforms: iOS
    - Name: Bible Trivia
    - Primary Language: English
-   - Bundle ID: com.bibletrivia.app
+  - Bundle ID: com.iguruapp.bibletrivia
    - SKU: bible-trivia-100
 3. Fill in app information:
    - Description (170 chars shown, 4000 max)
@@ -65,6 +65,7 @@
    - Default language: English
    - App type: Game
    - Category: Trivia
+  - Android package name: com.bibletrivia.app
 3. Complete Store Listing:
    - Short description (80 chars max)
    - Full description (4000 chars max)

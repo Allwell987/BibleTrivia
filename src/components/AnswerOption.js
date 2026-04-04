@@ -4,9 +4,12 @@ import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
-const AnswerOption = ({ option, index, selected, correctAnswer, isTimeout, onSelect }) => {
+const AnswerOption = ({ option, index, selected, correctAnswer, isTimeout, onSelect, isHidden }) => {
   const { theme } = useTheme();
   const { colors } = theme;
+
+  if (isHidden && !selected) return null;
+
   const letter = String.fromCharCode(65 + index);
 
   let containerStyle = styles(colors).optBtn;

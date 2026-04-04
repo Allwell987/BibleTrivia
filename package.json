@@ -14,28 +14,35 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/native": "^7.0.0",
     "@react-navigation/native-stack": "^7.0.0",
+    "@supabase/supabase-js": "^2.101.1",
     "babel-preset-expo": "^55.0.13",
-    "expo": "^55.0.9",
-    "expo-apple-authentication": "~55.0.9",
+    "expo": "~55.0.11",
+    "expo-apple-authentication": "~55.0.11",
     "expo-asset": "~55.0.10",
-    "expo-audio": "~55.0.9",
-    "expo-auth-session": "~55.0.10",
+    "expo-audio": "~55.0.11",
+    "expo-auth-session": "~55.0.12",
     "expo-constants": "~55.0.9",
-    "expo-crypto": "~55.0.10",
+    "expo-crypto": "~55.0.12",
     "expo-font": "~55.0.4",
-    "expo-haptics": "~55.0.9",
-    "expo-linking": "~55.0.9",
-    "expo-splash-screen": "~55.0.13",
-    "expo-status-bar": "~55.0.4",
-    "expo-video": "~55.0.11",
-    "expo-web-browser": "~55.0.10",
-    "firebase": "^11.0.0",
+    "expo-haptics": "~55.0.11",
+    "expo-linking": "~55.0.11",
+    "expo-secure-store": "~55.0.11",
+    "expo-splash-screen": "~55.0.15",
+    "expo-status-bar": "~55.0.5",
+    "expo-video": "~55.0.13",
+    "expo-web-browser": "~55.0.12",
+    "firebase": "^11.10.0",
     "react": "19.2.0",
+    "react-dom": "19.2.0",
     "react-native": "0.83.4",
-    "react-native-google-mobile-ads": "^14.2.2",
+    "react-native-google-mobile-ads": "^16.3.1",
     "react-native-iap": "^14.7.19",
+    "react-native-nitro-modules": "^0.35.2",
+    "react-native-purchases": "^9.15.1",
+    "react-native-purchases-ui": "^9.15.1",
     "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.23.0"
+    "react-native-screens": "~4.23.0",
+    "react-native-web": "^0.21.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -49,5 +56,12 @@
     "prettier": "^3.2.5",
     "react-test-renderer": "^19.2.0"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "doctor": {
+      "appConfigFieldsNotSyncedCheck": {
+        "enabled": false
+      }
+    }
+  }
 }

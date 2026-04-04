@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet, Switch, ScrollView, Linking, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useProgress } from '../context/ProgressContext';
 import { updateSetting, loadSettings, resetStats, resetAchievements } from '../utils/storage';
 import { getAnalyticsEvents, clearAnalyticsEvents, trackEvent } from '../utils/analytics';
+import { presentCustomerCenter } from '../utils/purchases';
 
 const TIMER_OPTIONS = [10, 15, 20, 30];
 const PRIVACY_URL = 'https://your-domain.com/privacy-policy';
@@ -12,6 +14,7 @@ const PRIVACY_URL = 'https://your-domain.com/privacy-policy';
 export default function SettingsScreen({ navigation }) {
   const { theme, updateTheme } = useTheme();
   const { colors } = theme;
+  const { progress } = useProgress();
   const {
     user,
     signInWithApple,
@@ -175,6 +178,39 @@ export default function SettingsScreen({ navigation }) {
                 <Text style={styles.logoutText}>Sign Out</Text>
               </TouchableOpacity>
             </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Subscription</Text>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('Shop')}
+          >
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>
+                {progress.isPro ? '👑 Bible Trivia Pro' : '💎 Upgrade to Pro'}
+              </Text>
+              <Text style={styles.rowDesc}>
+                {progress.isPro ? 'All premium features unlocked' : 'Remove ads and get unlimited hints'}
+              </Text>
+            </View>
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>
+              {progress.isPro ? 'Manage' : 'Upgrade'}
+            </Text>
+          </TouchableOpacity>
+
+          {progress.isPro && (
+            <TouchableOpacity
+              style={[styles.row, { marginTop: 8 }]}
+              onPress={presentCustomerCenter}
+            >
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>Subscription Center</Text>
+                <Text style={styles.rowDesc}>Manage or cancel your subscription</Text>
+              </View>
+              <Text style={{ color: colors.textSecondary }}>→</Text>
+            </TouchableOpacity>
           )}
         </View>
 

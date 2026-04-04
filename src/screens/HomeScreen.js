@@ -1,91 +1,62 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Animated, Dimensions, ScrollView, Modal, Alert,
+  Animated, Dimensions, ScrollView, Alert, Easing, ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
-import { useProgress } from '../context/ProgressContext';
+import { useProgress, STREAK_MILESTONES } from '../context/ProgressContext';
 import { getDailyVerse } from '../data/questions';
-import { loadScores, loadStats, loadStreak } from '../utils/storage';
-// import { showRewardedAd } from '../utils/ads';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const DIFFICULTIES = [
-  { key: 'easy', label: 'Easy', subtitle: 'Basic Bible knowledge', color: '#4CAF82', seconds: 20 },
-  { key: 'medium', label: 'Medium', subtitle: 'Some study required', color: '#E6A817', seconds: 15 },
-  { key: 'hard', label: 'Hard', subtitle: 'Deep scripture knowledge', color: '#D95F4B', seconds: 10 },
+  { key: 'easy', label: 'Easy', subtitle: 'Basic Bible knowledge', color: '#4CAF82', lightColor: '#E8F5E9' },
+  { key: 'medium', label: 'Medium', subtitle: 'Some study required', color: '#E6A817', lightColor: '#FFF8E1' },
+  { key: 'hard', label: 'Hard', subtitle: 'Deep scripture knowledge', color: '#D95F4B', lightColor: '#FFEBEE' },
+  { key: 'expert', label: 'Expert', subtitle: 'Master biblical scholar', color: '#9B59B6', lightColor: '#F3E5F5' },
 ];
 
 export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
-  const { isUnlocked, getDifficultyInfo, progress, claimDailyReward } = useProgress();
+  const { isUnlocked, progress, getStreakMilestone } = useProgress();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
+  const fireAnim = useRef(new Animated.Value(1)).current;
   const [dailyVerse] = useState(getDailyVerse);
-  const [streak, setStreak] = useState(null);
-  const [snapshot, setSnapshot] = useState({
-    accuracy: 0,
-    quizzes: 0,
-    lastScore: null,
-  });
 
-  // Daily Reward State
-  const [showRewardModal, setShowRewardModal] = useState(false);
-  const [rewardAmount, setRewardAmount] = useState(0);
+  const nextMilestone = getStreakMilestone();
+
+  const accuracy = (progress.totalQuestionsAnswered || 0) > 0
+    ? Math.round(((progress.totalCorrect || 0) / progress.totalQuestionsAnswered) * 100)
+    : 0;
+  const quizzes =
+    (progress.easyCompleted || 0) +
+    (progress.mediumCompleted || 0) +
+    (progress.hardCompleted || 0) +
+    (progress.expertCompleted || 0) +
+    (progress.dailyChallengesCompleted || 0);
+
+  useEffect(() => {
+    if (progress.currentStreak >= 3) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(fireAnim, { toValue: 1.1, duration: 500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(fireAnim, { toValue: 1, duration: 500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+  }, [progress.currentStreak]);
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
     ]).start();
-
-    // Check for daily reward on mount
-    checkDailyReward();
   }, []);
-
-  const checkDailyReward = async () => {
-    const result = await claimDailyReward();
-    if (result.success) {
-      setRewardAmount(result.reward);
-      setShowRewardModal(true);
-    }
-  };
-
-  const handleWatchAd = () => {
-    // Ad logic disabled for Expo Go compatibility
-    /*
-    setIsAdLoading(true);
-    showRewardedAd(async (success) => {
-      setIsAdLoading(false);
-      if (success) {
-        await earnCoins(100);
-        setRewardAmount(100);
-        setShowRewardModal(true);
-      }
-    });
-    */
-    Alert.alert('Unavailable in Expo Go', 'Watching ads is only available in the standalone app version.');
-  };
-
-  useFocusEffect(
-    React.useCallback(() => {
-      Promise.all([loadStreak(), loadStats(), loadScores()]).then(([st, stats, scores]) => {
-        setStreak(st);
-        const accuracy = stats.totalQuestions > 0
-          ? Math.round((stats.totalCorrect / stats.totalQuestions) * 100)
-          : 0;
-        setSnapshot({
-          accuracy,
-          quizzes: stats.totalQuizzes || 0,
-          lastScore: scores[0] || null,
-        });
-      });
-    }, [])
-  );
 
   const styles = createStyles(colors);
 
@@ -93,72 +64,114 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={styles.crossWrap}>
-            <View style={styles.crossV} />
-            <View style={styles.crossH} />
-          </View>
-
           <View style={styles.topRow}>
-            <View style={styles.currencyBadge}>
-              <Text style={styles.coinIcon}>✨</Text>
+            <TouchableOpacity
+              style={styles.currencyBadge}
+              onPress={() => navigation.navigate('Shop')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.coinIcon}>🪙</Text>
               <Text style={styles.coinText}>{progress.coins || 0}</Text>
-            </View>
+              {progress.isPro && (
+                <View style={styles.miniProBadge}>
+                  <Text style={styles.miniProText}>PRO</Text>
+                </View>
+              )}
+              <Text style={styles.plusIcon}>+</Text>
+            </TouchableOpacity>
           </View>
 
-          <Text style={styles.eyebrow}>The Word of God</Text>
+          <Text style={styles.eyebrow}>THE WORD OF GOD</Text>
           <Text style={styles.title}>Bible Trivia</Text>
 
-          {streak && streak.currentStreak > 0 && (
-            <View style={styles.streakBadge}>
-              <Text style={styles.streakIcon}>🔥</Text>
-              <Text style={styles.streakText}>{streak.currentStreak} day streak!</Text>
+          {progress.currentStreak > 0 && (
+            <View style={styles.streakContainer}>
+              <Animated.View style={[styles.streakBadge, progress.currentStreak >= 3 && { transform: [{ scale: fireAnim }] }]}>
+                <Text style={styles.streakIcon}>{progress.currentStreak >= 7 ? '🔥🔥🔥' : '🔥'}</Text>
+                <Text style={styles.streakText}>{progress.currentStreak} day streak!</Text>
+              </Animated.View>
+              <Text style={styles.milestoneText}>Next: {nextMilestone.name} ({nextMilestone.days} days)</Text>
             </View>
           )}
         </Animated.View>
 
-        <Animated.View style={[styles.dailyVerse, { opacity: fadeAnim }]}>
-          <Text style={styles.verseIcon}>📖</Text>
-          <Text style={styles.verseText}>"{dailyVerse.text}"</Text>
-          <Text style={styles.verseRef}>— {dailyVerse.ref}</Text>
-        </Animated.View>
+        <TouchableOpacity
+          style={styles.journeyBtn}
+          onPress={() => navigation.navigate('Journey')}
+          activeOpacity={0.9}
+        >
+          <ImageBackground
+            source={{ uri: 'https://images.unsplash.com/photo-1504052434569-70ad5816544a?q=80&w=1000&auto=format&fit=crop' }}
+            style={styles.journeyBg}
+            imageStyle={{ borderRadius: 24 }}
+          >
+            <View style={styles.journeyOverlay}>
+              <View style={styles.journeyContent}>
+                <View style={styles.journeyIconContainer}>
+                  <Text style={styles.journeyEmoji}>🧭</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.journeyTitle}>Biblical Journey</Text>
+                  <Text style={styles.journeySub}>Trace the story from Creation to Paul</Text>
+                </View>
+                <View style={styles.journeyArrowCircle}>
+                  <Text style={styles.journeyArrow}>›</Text>
+                </View>
+              </View>
+            </View>
+          </ImageBackground>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.dailyChallengeBtn, progress.dailyChallengeCompleted ? styles.dailyChallengeDone : { backgroundColor: colors.primary }]}
+          onPress={() => {
+            if (progress.dailyChallengeCompleted) {
+              Alert.alert('Completed', "You have already finished today's challenge. Come back tomorrow!");
+            } else {
+              navigation.navigate('Quiz', { difficulty: 'mixed', seconds: 15, isDaily: true });
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <View style={styles.dailyIconBox}>
+            <Text style={styles.dailyEmoji}>{progress.dailyChallengeCompleted ? '✅' : '☀️'}</Text>
+          </View>
+          <View style={styles.dailyTextContainer}>
+            <Text style={[styles.dailyTitle, { color: progress.dailyChallengeCompleted ? colors.text : '#FFF' }]}>
+              Daily Challenge
+            </Text>
+            <Text style={[styles.dailySub, { color: progress.dailyChallengeCompleted ? colors.textMuted : '#FFF' }]}>
+              {progress.dailyChallengeCompleted ? 'Come back tomorrow!' : '5 Questions · 50 ✨ bonus'}
+            </Text>
+          </View>
+          {!progress.dailyChallengeCompleted && <Text style={styles.playIcon}>▶</Text>}
+        </TouchableOpacity>
+
+        <View style={styles.dailyVerse}>
+          <View style={styles.verseInner}>
+            <Text style={styles.verseIcon}>📖</Text>
+            <Text style={styles.verseText}>"{dailyVerse.text}"</Text>
+            <Text style={styles.verseRef}>— {dailyVerse.ref}</Text>
+          </View>
+        </View>
 
         <View style={styles.snapshotCard}>
-          <Text style={styles.snapshotTitle}>Performance Snapshot</Text>
+          <Text style={styles.snapshotTitle}>Knowledge Profile: <Text style={{ color: colors.primary }}>{progress.knowledgeLevel}</Text></Text>
           <View style={styles.snapshotRow}>
             <View style={styles.snapshotMetric}>
-              <Text style={styles.snapshotValue}>{snapshot.accuracy}%</Text>
+              <Text style={styles.snapshotValue}>{accuracy}%</Text>
               <Text style={styles.snapshotLabel}>Accuracy</Text>
             </View>
             <View style={styles.snapshotMetric}>
-              <Text style={styles.snapshotValue}>{snapshot.quizzes}</Text>
+              <Text style={styles.snapshotValue}>{quizzes}</Text>
               <Text style={styles.snapshotLabel}>Quizzes</Text>
             </View>
             <View style={styles.snapshotMetric}>
-              <Text style={styles.snapshotValue}>{streak?.currentStreak || 0}</Text>
+              <Text style={styles.snapshotValue}>{progress.currentStreak}</Text>
               <Text style={styles.snapshotLabel}>Streak</Text>
             </View>
           </View>
-          <Text style={styles.snapshotSubtext}>
-            {snapshot.lastScore
-              ? `Last: ${snapshot.lastScore.pct}% on ${snapshot.lastScore.difficulty}`
-              : 'No saved score yet. Complete your first quiz.'}
-          </Text>
         </View>
-
-        {/* Ad Integration: Wisdom Reward Button (Disabled for Expo Go) */}
-        <TouchableOpacity
-          style={styles.adButton}
-          onPress={handleWatchAd}
-          accessibilityRole="button"
-          accessibilityLabel="Get free wisdom coins"
-          accessibilityHint="Shows rewarded ad availability information"
-        >
-          <Text style={styles.adButtonIcon}>📽️</Text>
-          <View>
-            <Text style={styles.adButtonTitle}>Get Free Wisdom</Text>
-            <Text style={styles.adButtonSub}>Watch a video to receive 100 ✨ coins</Text>
-          </View>
-        </TouchableOpacity>
 
         <View style={styles.divider}>
           <View style={styles.divLine} />
@@ -166,249 +179,145 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.divLine} />
         </View>
 
-        <Text style={styles.chooseLabel}>Choose Your Difficulty</Text>
+        <Text style={styles.chooseLabel}>Select Difficulty</Text>
 
-        {DIFFICULTIES.map((d) => {
-          const locked = !isUnlocked(d.key);
-          const diffInfo = locked ? getDifficultyInfo(d.key) : null;
-          
-          return (
-            <TouchableOpacity
-              key={d.key}
-              style={[styles.card, { borderColor: locked ? colors.dim : d.color, opacity: locked ? 0.6 : 1 }]}
-              onPress={() => {
-                if (!locked) {
-                  navigation.navigate('Quiz', { difficulty: d.key, seconds: d.seconds });
-                }
-              }}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel={`${d.label} difficulty`}
-              accessibilityHint={locked ? `Locked. ${diffInfo ? `${diffInfo.currentProgress}% complete toward unlock` : 'Meet unlock requirements first'}` : `Starts ${d.label} quiz with ${d.seconds} seconds per question`}
-              accessibilityState={{ disabled: locked }}
-            >
-              <View style={[styles.dot, { backgroundColor: locked ? colors.dim : d.color }]} />
-              <View style={styles.cardText}>
-                <Text style={[styles.cardLabel, { color: locked ? colors.textMuted : d.color }]}>
-                  {d.label} {locked && '🔒'}
-                </Text>
-                <Text style={styles.cardSub}>
-                  {locked && diffInfo ? `${diffInfo.currentProgress}% to unlock · ` : ''}
-                  {d.subtitle} · ⏱ {d.seconds}s per question
-                </Text>
-              </View>
-              {!locked && <Text style={[styles.arrow, { color: d.color }]}>›</Text>}
-            </TouchableOpacity>
-          );
-        })}
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={styles.lbBtn}
-            onPress={() => navigation.navigate('Leaderboard')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Open leaderboard"
-            accessibilityHint="View top saved scores"
-          >
-            <Text style={styles.lbIcon}>🏆</Text>
-            <Text style={styles.lbText}>Leaderboard</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.statsBtn}
-            onPress={() => navigation.navigate('Challenge')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Open challenges"
-            accessibilityHint="View challenge mode and objectives"
-          >
-            <Text style={styles.statsIcon}>⚡</Text>
-            <Text style={styles.statsText}>Challenges</Text>
-          </TouchableOpacity>
+        <View style={styles.difficultyGrid}>
+          {DIFFICULTIES.map((d) => {
+            const locked = !isUnlocked(d.key);
+            return (
+              <TouchableOpacity
+                key={d.key}
+                style={[styles.diffCard, locked ? styles.diffCardLocked : { backgroundColor: d.color }]}
+                onPress={() => { if (!locked) navigation.navigate('Quiz', { difficulty: d.key, seconds: d.seconds }); }}
+                activeOpacity={0.75}
+              >
+                <View style={styles.diffContent}>
+                  <View style={styles.diffHeader}>
+                    <Text style={[styles.diffLabel, locked && { color: colors.textMuted }]}>{d.label}</Text>
+                    {locked ? <Text style={styles.lockIcon}>🔒</Text> : <Text style={styles.playIconSmall}>▶</Text>}
+                  </View>
+                  <Text style={[styles.diffSub, locked && { color: colors.textMuted }]}>{d.subtitle}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={styles.lbBtn}
-            onPress={() => navigation.navigate('Statistics')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Open statistics"
-            accessibilityHint="View your quiz performance statistics"
-          >
-            <Text style={styles.lbIcon}>📊</Text>
-            <Text style={styles.lbText}>Statistics</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.statsBtn}
-            onPress={() => navigation.navigate('Achievements')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Open achievements"
-            accessibilityHint="View unlocked and locked achievements"
-          >
-            <Text style={styles.statsIcon}>🏅</Text>
-            <Text style={styles.statsText}>Achievements</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={styles.settingsBtn}
-          onPress={() => navigation.navigate('Settings')}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel="Open settings"
-          accessibilityHint="Manage app preferences"
-        >
-          <Text style={styles.settingsIcon}>⚙️</Text>
-          <Text style={styles.settingsText}>Settings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.settingsBtn}
-          onPress={() => navigation.navigate('Shop')}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel="Open coin shop"
-          accessibilityHint="Purchase additional wisdom coins"
-        >
-          <Text style={styles.settingsIcon}>🛍️</Text>
-          <Text style={styles.settingsText}>Shop</Text>
-        </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <View style={styles.footLine} />
-          <Text style={styles.footIcon}>🕊️</Text>
-          <View style={styles.footLine} />
-        </View>
-      </ScrollView>
-
-      {/* Daily Reward Modal */}
-      <Modal
-        visible={showRewardModal}
-        transparent
-        animationType="fade"
-        accessibilityViewIsModal
-        onRequestClose={() => setShowRewardModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent} accessible accessibilityLabel={`Daily reward received. ${rewardAmount} wisdom added.`}>
-            <Text style={styles.modalEmoji} accessible={false}>🎁</Text>
-            <Text style={styles.modalTitle}>Blessing Received!</Text>
-            <Text style={styles.modalSub}>Your wisdom has increased. Use it wisely!</Text>
-
-            <View style={styles.rewardPill}>
-              <Text style={styles.rewardText}>+{rewardAmount} Wisdom</Text>
-              <Text style={styles.coinIcon}>✨</Text>
+          <TouchableOpacity style={styles.gridBtn} onPress={() => navigation.navigate('Collection')}>
+            <View style={[styles.iconBox, { backgroundColor: '#FFD70020' }]}>
+              <Text style={styles.btnIcon}>🧩</Text>
             </View>
-
-            <TouchableOpacity
-              style={styles.claimBtn}
-              onPress={() => setShowRewardModal(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Close reward dialog"
-              accessibilityHint="Closes the daily reward popup"
-            >
-              <Text style={styles.claimBtnText}>Amen!</Text>
-            </TouchableOpacity>
-          </View>
+            <Text style={styles.btnText}>Collection</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.gridBtn} onPress={() => navigation.navigate('Leaderboard')}>
+            <View style={[styles.iconBox, { backgroundColor: '#4CAF5020' }]}>
+              <Text style={styles.btnIcon}>🏆</Text>
+            </View>
+            <Text style={styles.btnText}>Ranking</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.gridBtn} onPress={() => navigation.navigate('Reflections')}>
+            <View style={[styles.iconBox, { backgroundColor: '#2196F320' }]}>
+              <Text style={styles.btnIcon}>📝</Text>
+            </View>
+            <Text style={styles.btnText}>Notes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.gridBtn} onPress={() => navigation.navigate('Challenge')}>
+            <View style={[styles.iconBox, { backgroundColor: '#FF572220' }]}>
+              <Text style={styles.btnIcon}>⚡</Text>
+            </View>
+            <Text style={styles.btnText}>Events</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.settingsBtn} onPress={() => navigation.navigate('Settings')}>
+          <Text style={styles.settingsIcon}>⚙️</Text>
+          <Text style={styles.settingsText}>Settings & Profile</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const createStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 24 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 30 },
   header: { alignItems: 'center', paddingTop: 20, marginBottom: 24 },
   topRow: { position: 'absolute', top: 0, right: 0 },
-  currencyBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: colors.cardBorder },
-  coinIcon: { fontSize: 14, marginRight: 4 },
-  coinText: { fontSize: 13, fontWeight: '700', color: colors.primary },
-  crossWrap: {
-    position: 'absolute', top: -20, alignSelf: 'center',
-    width: 32, height: 40, alignItems: 'center', justifyContent: 'center',
+  currencyBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
+  coinIcon: { fontSize: 16, marginRight: 6 },
+  coinText: { fontSize: 14, fontWeight: '800', color: colors.warning },
+  miniProBadge: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    marginLeft: 6,
   },
-  crossV: { position: 'absolute', width: 3, height: 40, backgroundColor: colors.primary, borderRadius: 2, opacity: 0.35 },
-  crossH: { position: 'absolute', width: 32, height: 3, backgroundColor: colors.primary, borderRadius: 2, opacity: 0.35, top: 10 },
-  eyebrow: { fontSize: 11, letterSpacing: 4, color: colors.primary, textTransform: 'uppercase', marginBottom: 8 },
-  title: { fontSize: 46, fontWeight: '700', color: colors.text, letterSpacing: 1, marginBottom: 8 },
-  streakBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.card, borderRadius: 20, borderWidth: 1, borderColor: colors.cardBorder },
-  streakIcon: { fontSize: 14, marginRight: 6 },
-  streakText: { fontSize: 13, color: colors.warning, fontWeight: '600' },
-  dailyVerse: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder },
-  verseIcon: { fontSize: 18, marginBottom: 8 },
-  verseText: { fontSize: 14, color: colors.text, fontStyle: 'italic', textAlign: 'center', lineHeight: 22 },
-  verseRef: { fontSize: 12, color: colors.primary, marginTop: 10, fontWeight: '500' },
-  snapshotCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+  miniProText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.background,
   },
-  snapshotTitle: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 12 },
-  snapshotRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
-  snapshotMetric: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  snapshotValue: { color: colors.primary, fontSize: 18, fontWeight: '700' },
-  snapshotLabel: { color: colors.textSecondary, fontSize: 11, marginTop: 2 },
-  snapshotSubtext: { color: colors.textSecondary, fontSize: 12 },
-
-  // Ad Button Styles
-  adButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary + '10', borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: colors.primary + '30' },
-  adButtonIcon: { fontSize: 24, marginRight: 16 },
-  adButtonTitle: { fontSize: 16, fontWeight: '700', color: colors.primary },
-  adButtonSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-
+  plusIcon: { fontSize: 12, marginLeft: 6, color: colors.primary, fontWeight: '900' },
+  eyebrow: { fontSize: 10, letterSpacing: 3, color: colors.primary, fontWeight: '800', marginBottom: 6 },
+  title: { fontSize: 42, fontWeight: '900', color: colors.text, letterSpacing: -0.5, marginBottom: 8 },
+  streakContainer: { alignItems: 'center', marginTop: 8 },
+  streakBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.card, borderRadius: 24, borderWidth: 1, borderColor: colors.warning + '40', shadowColor: colors.warning, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  streakIcon: { fontSize: 16, marginRight: 8 },
+  streakText: { fontSize: 14, color: colors.warning, fontWeight: '700' },
+  milestoneText: { fontSize: 12, color: colors.textMuted, marginTop: 6, fontStyle: 'italic' },
+  journeyBtn: { width: '100%', height: 160, marginBottom: 20, borderRadius: 24, overflow: 'hidden', elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+  journeyBg: { flex: 1 },
+  journeyOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end', padding: 20 },
+  journeyContent: { flexDirection: 'row', alignItems: 'center' },
+  journeyIconContainer: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', marginRight: 15 },
+  journeyEmoji: { fontSize: 28 },
+  journeyTitle: { fontSize: 24, fontWeight: '900', color: '#FFF', marginBottom: 2 },
+  journeySub: { fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: '500' },
+  journeyArrowCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
+  journeyArrow: { fontSize: 24, color: '#000', fontWeight: 'bold', marginTop: -2 },
+  dailyChallengeBtn: { flexDirection: 'row', alignItems: 'center', padding: 20, marginBottom: 20, borderRadius: 20, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  dailyChallengeDone: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  dailyIconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  dailyEmoji: { fontSize: 24 },
+  dailyTextContainer: { flex: 1 },
+  dailyTitle: { fontSize: 18, fontWeight: '800', marginBottom: 2, color: '#FFF' },
+  dailySub: { fontSize: 12, fontWeight: '600', opacity: 0.9, color: '#FFF' },
+  playIcon: { fontSize: 20, color: '#FFF', marginLeft: 10 },
+  dailyVerse: { backgroundColor: colors.card, borderRadius: 20, marginBottom: 24, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+  verseInner: { padding: 24, alignItems: 'center' },
+  verseIcon: { fontSize: 22, marginBottom: 12 },
+  verseText: { fontSize: 16, color: colors.text, fontStyle: 'italic', textAlign: 'center', lineHeight: 26, fontWeight: '500' },
+  verseRef: { fontSize: 13, color: colors.primary, marginTop: 14, fontWeight: '700', letterSpacing: 0.5 },
+  snapshotCard: { backgroundColor: colors.card, borderRadius: 20, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: colors.border },
+  snapshotTitle: { color: colors.textSecondary, fontSize: 12, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 16 },
+  snapshotRow: { flexDirection: 'row', gap: 12 },
+  snapshotMetric: { flex: 1, backgroundColor: colors.background, borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  snapshotValue: { color: colors.text, fontSize: 20, fontWeight: '900' },
+  snapshotLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', marginTop: 4, textTransform: 'uppercase' },
   divider: { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 20 },
   divLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  divIcon: { color: colors.primary, fontSize: 11, marginHorizontal: 10 },
-  chooseLabel: { fontSize: 10, letterSpacing: 3, color: colors.textMuted, textTransform: 'uppercase', marginBottom: 14, alignSelf: 'flex-start' },
-  card: {
-    flexDirection: 'row', alignItems: 'center',
-    width: '100%', backgroundColor: colors.card,
-    borderWidth: 1, borderRadius: 14,
-    paddingVertical: 18, paddingHorizontal: 20, marginBottom: 12,
-  },
-  dot: { width: 10, height: 10, borderRadius: 5, marginRight: 16 },
-  cardText: { flex: 1 },
-  cardLabel: { fontSize: 17, fontWeight: '600', marginBottom: 3 },
-  cardSub: { fontSize: 12, color: colors.textMuted },
-  arrow: { fontSize: 26, fontWeight: '200', lineHeight: 28 },
-  buttonRow: { flexDirection: 'row', gap: 12, marginTop: 8, marginBottom: 12 },
-  lbBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 12, backgroundColor: colors.card },
-  lbIcon: { fontSize: 16, marginRight: 8 },
-  lbText: { fontSize: 14, color: colors.primary, fontWeight: '500' },
-  statsBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 12, backgroundColor: colors.card },
-  statsIcon: { fontSize: 16, marginRight: 8 },
-  statsText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
-  settingsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 12, backgroundColor: colors.card },
-  settingsIcon: { fontSize: 16, marginRight: 8 },
-  settingsText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
-  footer: { flexDirection: 'row', alignItems: 'center', marginTop: 24 },
-  footLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  footIcon: { fontSize: 16, marginHorizontal: 12 },
-
-  // Modal Styles
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: width * 0.8, backgroundColor: colors.background, borderRadius: 24, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: colors.primary + '30' },
-  modalEmoji: { fontSize: 50, marginBottom: 16 },
-  modalTitle: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  modalSub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
-  rewardPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary + '15', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 30, marginBottom: 24 },
-  rewardText: { fontSize: 18, fontWeight: '700', color: colors.primary, marginRight: 6 },
-  claimBtn: { backgroundColor: colors.primary, paddingVertical: 14, paddingHorizontal: 40, borderRadius: 14, width: '100%', alignItems: 'center' },
-  claimBtnText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  divIcon: { color: colors.primary, fontSize: 14, marginHorizontal: 15 },
+  chooseLabel: { fontSize: 11, letterSpacing: 2, color: colors.textMuted, fontWeight: '800', textTransform: 'uppercase', marginBottom: 16 },
+  difficultyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
+  diffCard: { width: (width - 52) / 2, borderRadius: 20, overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  diffCardLocked: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, opacity: 0.7 },
+  diffContent: { padding: 18, height: 110, justifyContent: 'space-between' },
+  diffHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  diffLabel: { fontSize: 18, fontWeight: '900', color: '#FFF' },
+  lockIcon: { fontSize: 16 },
+  playIconSmall: { fontSize: 14, color: '#FFF', opacity: 0.8 },
+  diffSub: { fontSize: 11, color: '#FFF', opacity: 0.9, fontWeight: '600', lineHeight: 14 },
+  buttonRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  gridBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
+  iconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  btnIcon: { fontSize: 18 },
+  btnText: { fontSize: 14, fontWeight: '700', color: colors.text },
+  settingsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, marginTop: 10, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
+  settingsIcon: { fontSize: 18, marginRight: 10 },
+  settingsText: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },
 });
