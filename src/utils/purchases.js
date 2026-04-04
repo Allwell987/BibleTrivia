@@ -1,21 +1,31 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import Purchases from 'react-native-purchases';
-import PurchasesHolder from 'react-native-purchases-ui';
 
-// Configuration
+let Purchases = null;
+let RevenueCatUI = null;
+
+try {
+  Purchases = require('react-native-purchases').default;
+  RevenueCatUI = require('react-native-purchases-ui').default;
+} catch (error) {
+  if (__DEV__) {
+    console.log('RevenueCat native modules unavailable in this environment.');
+  }
+}
+
+// NOTE: For production builds, use platform public SDK keys from RevenueCat dashboard.
 const REVENUECAT_API_KEY = Platform.select({
-  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || 'test_xtrPxefMVMPmKKIkehsdrglhlNZ',
-  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || 'test_xtrPxefMVMPmKKIkehsdrglhlNZ',
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || 'test_gxRnMpjvLZJXAQdYMWRxMUmUctc',
+  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || 'test_gxRnMpjvLZJXAQdYMWRxMUmUctc',
 });
 
 const isInvalidRevenueCatKey = (key) =>
   !key ||
   typeof key !== 'string' ||
-  key.startsWith('test_') ||
   key.includes('YOUR_');
 
-const ENTITLEMENT_ID = 'Allwell Pro';
+// Product requirement: entitlement name should be exactly "Bible Trivia Pro".
+const ENTITLEMENT_ID = 'Bible Trivia Pro';
 const PURCHASES_KEY = 'bible_trivia_purchases';
 
 export const PRODUCT_CONFIG = {
@@ -24,56 +34,122 @@ export const PRODUCT_CONFIG = {
   'com.iguruapp.bibletrivia.coins_1200': { coins: 1200 },
   'com.iguruapp.bibletrivia.coins_3000': { coins: 3000 },
   'com.iguruapp.bibletrivia.coins_7500': { coins: 7500 },
-  // Pro versions
-  'com.iguruapp.bibletrivia.pro_monthly': { isPro: true },
-  'com.iguruapp.bibletrivia.pro_yearly': { isPro: true },
-  'com.iguruapp.bibletrivia.pro_lifetime': { isPro: true },
+  'com.iguruapp.bibletrivia.pro_monthly': { isPro: true, packageType: 'monthly' },
+  'com.iguruapp.bibletrivia.pro_yearly': { isPro: true, packageType: 'yearly' },
+  'com.iguruapp.bibletrivia.pro_lifetime': { isPro: true, packageType: 'lifetime' },
 };
 
 let connectionInitialized = false;
+
+const hasProEntitlement = (customerInfo) =>
+  !!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID];
+
+const isPurchasesAvailable = () => !!Purchases;
 
 /**
  * Initialize RevenueCat SDK
  */
 export async function initializePurchases(userId) {
   try {
-    if (connectionInitialized) return true;
+    if (!isPurchasesAvailable()) return false;
+
+    if (connectionInitialized) {
+      if (userId) {
+        await Purchases.logIn(String(userId));
+      }
+      return true;
+    }
 
     if (!__DEV__ && isInvalidRevenueCatKey(REVENUECAT_API_KEY)) {
       console.error('⚠️ RevenueCat initialization blocked: missing production API key.');
       return false;
     }
 
-    // Configure RevenueCat
-    Purchases.configure({
-      apiKey: REVENUECAT_API_KEY,
-      appUserID: userId || null
-    });
-
-    // Enable debug logs in development
     if (__DEV__) {
       await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+    }
+
+    await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+
+    if (userId) {
+      await Purchases.logIn(String(userId));
     }
 
     connectionInitialized = true;
     console.log('✅ RevenueCat initialized');
     return true;
   } catch (error) {
-    console.error('⚠️ Failed to initialize RevenueCat:', error.message);
+    console.error('⚠️ Failed to initialize RevenueCat:', error?.message || error);
     return false;
   }
 }
 
+export async function identifyPurchasesUser(userId) {
+  try {
+    if (!isPurchasesAvailable()) return;
+    if (!userId) return;
+    if (!connectionInitialized) {
+      await initializePurchases(userId);
+      return;
+    }
+    await Purchases.logIn(String(userId));
+  } catch (e) {
+    console.error('RevenueCat logIn failed:', e?.message || e);
+  }
+}
+
+export async function clearPurchasesUser() {
+  try {
+    if (!isPurchasesAvailable()) return;
+    if (!connectionInitialized) return;
+    await Purchases.logOut();
+  } catch (e) {
+    console.error('RevenueCat logOut failed:', e?.message || e);
+  }
+}
+
+export function subscribeToCustomerInfo(onUpdate) {
+  try {
+    if (!isPurchasesAvailable()) return () => {};
+
+    const listener = (customerInfo) => {
+      onUpdate?.({ customerInfo, isPro: hasProEntitlement(customerInfo) });
+    };
+
+    Purchases.addCustomerInfoUpdateListener(listener);
+
+    return () => {
+      if (typeof Purchases.removeCustomerInfoUpdateListener === 'function') {
+        Purchases.removeCustomerInfoUpdateListener(listener);
+      }
+    };
+  } catch (e) {
+    console.error('Customer info listener failed:', e?.message || e);
+    return () => {};
+  }
+}
+
 /**
- * Check if user has active "Allwell Pro" entitlement
+ * Check if user has active "Bible Trivia Pro" entitlement
  */
 export async function checkProStatus() {
   try {
+    if (!isPurchasesAvailable()) return false;
     const customerInfo = await Purchases.getCustomerInfo();
-    return !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+    return hasProEntitlement(customerInfo);
   } catch (e) {
     console.error('Error checking pro status:', e);
     return false;
+  }
+}
+
+export async function getCustomerInfo() {
+  try {
+    if (!isPurchasesAvailable()) return null;
+    return await Purchases.getCustomerInfo();
+  } catch (e) {
+    console.error('Error fetching customer info:', e);
+    return null;
   }
 }
 
@@ -82,6 +158,7 @@ export async function checkProStatus() {
  */
 export async function getOfferings() {
   try {
+    if (!isPurchasesAvailable()) return [];
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
       return offerings.current.availablePackages;
@@ -93,21 +170,33 @@ export async function getOfferings() {
   }
 }
 
+const isProPackage = (pkg) => {
+  const type = String(pkg?.identifier || '').toLowerCase();
+  const productId = pkg?.product?.identifier;
+  return (
+    type === 'monthly' ||
+    type === 'yearly' ||
+    type === 'lifetime' ||
+    !!PRODUCT_CONFIG[productId]?.isPro
+  );
+};
+
 /**
- * Legacy/Helper for ShopScreen to get pro offerings specifically
+ * Helper for ShopScreen to get pro offerings specifically
  */
 export async function getProOfferings() {
   try {
+    if (!isPurchasesAvailable()) return [];
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
-      // Return packages that are marked as pro in our config
       return offerings.current.availablePackages
-        .filter(pkg => PRODUCT_CONFIG[pkg.product.identifier]?.isPro)
-        .map(pkg => ({
+        .filter(isProPackage)
+        .map((pkg) => ({
           productId: pkg.product.identifier,
           title: pkg.product.title,
           price: pkg.product.priceString,
-          package: pkg
+          packageId: pkg.identifier,
+          package: pkg,
         }));
     }
     return [];
@@ -119,20 +208,20 @@ export async function getProOfferings() {
 
 /**
  * Fetch available coin packages
- * In RevenueCat, these can be in a separate offering or just products
  */
 export async function getAvailableCoinPackages() {
   try {
+    if (!isPurchasesAvailable()) return [];
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
       return offerings.current.availablePackages
-        .filter(pkg => PRODUCT_CONFIG[pkg.product.identifier]?.coins)
-        .map(pkg => ({
+        .filter((pkg) => PRODUCT_CONFIG[pkg.product.identifier]?.coins)
+        .map((pkg) => ({
           productId: pkg.product.identifier,
           title: pkg.product.title,
           price: pkg.product.priceString,
           coins: PRODUCT_CONFIG[pkg.product.identifier].coins,
-          package: pkg
+          package: pkg,
         }));
     }
     return [];
@@ -143,26 +232,33 @@ export async function getAvailableCoinPackages() {
 }
 
 /**
- * Purchase a package
+ * Purchase a package or product id
  */
 export async function purchaseProduct(pkgOrId) {
   try {
+    if (!isPurchasesAvailable()) {
+      return {
+        success: false,
+        error: 'Purchases module unavailable',
+        cancelled: false,
+      };
+    }
+
     let purchaseResult;
     if (typeof pkgOrId === 'string') {
-      // If it's just an ID, we need to find the package or use purchaseStoreProduct
-      // For simplicity in ShopScreen, we usually pass the package object
       purchaseResult = await Purchases.purchaseStoreProduct(pkgOrId);
-    } else if (pkgOrId.package) {
+    } else if (pkgOrId?.package) {
       purchaseResult = await Purchases.purchasePackage(pkgOrId.package);
     } else {
       purchaseResult = await Purchases.purchasePackage(pkgOrId);
     }
 
     const { customerInfo } = purchaseResult;
-    const isPro = !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+    const isPro = hasProEntitlement(customerInfo);
 
-    // Identify if it was a coin purchase
-    const productId = typeof pkgOrId === 'string' ? pkgOrId : (pkgOrId.productId || pkgOrId.product.identifier);
+    const productId = typeof pkgOrId === 'string'
+      ? pkgOrId
+      : (pkgOrId?.productId || pkgOrId?.product?.identifier || '');
     const coins = PRODUCT_CONFIG[productId]?.coins || 0;
 
     return {
@@ -172,19 +268,19 @@ export async function purchaseProduct(pkgOrId) {
       customerInfo,
     };
   } catch (error) {
-    if (!error.userCancelled) {
+    if (!error?.userCancelled) {
       console.error('Purchase error:', error);
     }
     return {
       success: false,
-      error: error.message,
-      cancelled: error.userCancelled
+      error: error?.message || 'purchase_failed',
+      cancelled: !!error?.userCancelled,
     };
   }
 }
 
 /**
- * Alias for purchaseProduct to match some older calls
+ * Alias for purchaseProduct to match older calls
  */
 export async function purchaseCoinPackage(productId) {
   return purchaseProduct(productId);
@@ -195,20 +291,22 @@ export async function purchaseCoinPackage(productId) {
  */
 export async function restorePurchases() {
   try {
-    const customerInfo = await Purchases.restorePurchases();
-    const isProRestored = !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+    if (!isPurchasesAvailable()) {
+      return { success: false, error: 'Purchases module unavailable' };
+    }
 
-    // For coins, RevenueCat doesn't "restore" consumables in the traditional sense
-    // to the UI balance automatically, but we can check nonSubscriptionTransactions
+    const customerInfo = await Purchases.restorePurchases();
+    const isProRestored = hasProEntitlement(customerInfo);
+
     return {
       success: true,
       isProRestored,
       customerInfo,
-      coinsRestored: 0 // Consumables are usually handled differently
+      coinsRestored: 0,
     };
   } catch (error) {
     console.error('Restore error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || 'restore_failed' };
   }
 }
 
@@ -217,10 +315,10 @@ export async function restorePurchases() {
  */
 export async function presentPaywall() {
   try {
-    // Returns true if purchase was successful
-    await PurchasesHolder.presentPaywall();
+    if (!RevenueCatUI || !isPurchasesAvailable()) return false;
+    await RevenueCatUI.presentPaywall();
     const customerInfo = await Purchases.getCustomerInfo();
-    return !!customerInfo.entitlements.active[ENTITLEMENT_ID];
+    return hasProEntitlement(customerInfo);
   } catch (e) {
     console.error('Paywall error:', e);
     return false;
@@ -233,7 +331,8 @@ export async function presentPaywall() {
 export async function presentCustomerCenter() {
   if (Platform.OS === 'ios' || Platform.OS === 'android') {
     try {
-      await PurchasesHolder.presentCustomerCenter();
+      if (!RevenueCatUI) return;
+      await RevenueCatUI.presentCustomerCenter();
     } catch (e) {
       console.error('Customer Center error:', e);
     }

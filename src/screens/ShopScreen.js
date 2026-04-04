@@ -16,6 +16,7 @@ import {
   purchaseProduct,
   restorePurchases,
   getProOfferings,
+  presentPaywall,
   PRODUCT_CONFIG
 } from '../utils/purchases';
 import { trackEvent } from '../utils/analytics';
@@ -151,6 +152,25 @@ export default function ShopScreen({ navigation }) {
     });
   };
 
+  const handlePaywallUpgrade = async () => {
+    try {
+      setPurchasing('paywall');
+      const upgraded = await presentPaywall();
+      if (upgraded) {
+        await setProStatus(true);
+        trackEvent('pro_upgrade', { source: 'paywall' });
+        Alert.alert('Welcome to Pro! 👑', 'All pro features have been unlocked.');
+      } else {
+        Alert.alert('Upgrade cancelled', 'You can upgrade anytime from the shop.');
+      }
+    } catch (error) {
+      console.error('Paywall error:', error);
+      Alert.alert('Error', 'Unable to open paywall right now. Please try again.');
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -232,6 +252,38 @@ export default function ShopScreen({ navigation }) {
                 </View>
               </TouchableOpacity>
             ))}
+          </>
+        )}
+
+        {!progress.isPro && proPackages.length === 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Unlock Bible Trivia Pro</Text>
+            <TouchableOpacity
+              onPress={handlePaywallUpgrade}
+              disabled={purchasing === 'paywall'}
+              style={[
+                styles.packageCard,
+                { backgroundColor: colors.card, borderColor: colors.accent },
+                purchasing === 'paywall' && styles.packageCardDisabled,
+              ]}
+            >
+              <View style={styles.packageHeader}>
+                <Text style={[styles.packageTitle, { color: colors.text }]}>Upgrade with Paywall</Text>
+                <View style={[styles.bonusBadge, { backgroundColor: colors.accent }]}>
+                  <Text style={[styles.bonusText, { color: colors.background }]}>RECOMMENDED</Text>
+                </View>
+              </View>
+              <View style={styles.packageFooter}>
+                <Text style={[styles.price, { color: colors.textSecondary }]}>Monthly / Yearly / Lifetime</Text>
+                {purchasing === 'paywall' ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <View style={[styles.buyButton, { backgroundColor: colors.accent }]}> 
+                    <Text style={[styles.buyButtonText, { color: colors.background }]}>Open</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           </>
         )}
 

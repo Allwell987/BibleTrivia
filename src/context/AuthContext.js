@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../config/firebase';
 import { trackEvent } from '../utils/analytics';
+import { identifyPurchasesUser, clearPurchasesUser } from '../utils/purchases';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -44,6 +45,7 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         setUser(firebaseUser);
         await AsyncStorage.setItem('bible_trivia_user', JSON.stringify(firebaseUser));
+        await identifyPurchasesUser(firebaseUser.uid);
 
         if (lastUserIdRef.current !== firebaseUser.uid) {
           trackEvent('auth_state_changed', { state: 'signed_in' });
@@ -52,6 +54,7 @@ export function AuthProvider({ children }) {
       } else {
         setUser(null);
         await AsyncStorage.removeItem('bible_trivia_user');
+        await clearPurchasesUser();
 
         if (lastUserIdRef.current) {
           trackEvent('auth_state_changed', { state: 'signed_out' });

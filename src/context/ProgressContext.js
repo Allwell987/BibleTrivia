@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { useAuth } from './AuthContext';
 import { CHARACTERS, BIBLE_BOOKS } from '../data/collectibles';
+import { checkProStatus, subscribeToCustomerInfo } from '../utils/purchases';
 
 const PROGRESS_KEY = 'bible_trivia_progress';
 
@@ -225,6 +226,21 @@ export function ProgressProvider({ children }) {
   const [progress, setProgress] = useState(DEFAULT_PROGRESS);
   const [loading, setLoading] = useState(true);
 
+  const persistProgressSnapshot = useCallback(async (snapshot) => {
+    try {
+      await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(snapshot));
+      if (user && isFirebaseConfigured) {
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, {
+          progress: snapshot,
+          lastUpdated: new Date().toISOString(),
+        }, { merge: true });
+      }
+    } catch (e) {
+      console.warn('Failed to persist progress snapshot:', e);
+    }
+  }, [user]);
+
   useEffect(() => {
     loadInitialProgress();
   }, []);
@@ -234,6 +250,36 @@ export function ProgressProvider({ children }) {
       syncWithCloud();
     }
   }, [user, loading]);
+
+  useEffect(() => {
+    if (loading) return () => {};
+
+    let isActive = true;
+
+    const applyProStatus = async (isPro) => {
+      setProgress((prev) => {
+        if (prev.isPro === isPro) return prev;
+        const updated = { ...prev, isPro };
+        persistProgressSnapshot(updated);
+        return updated;
+      });
+    };
+
+    checkProStatus().then((isPro) => {
+      if (!isActive) return;
+      applyProStatus(isPro);
+    });
+
+    const unsubscribe = subscribeToCustomerInfo(({ isPro }) => {
+      if (!isActive) return;
+      applyProStatus(isPro);
+    });
+
+    return () => {
+      isActive = false;
+      unsubscribe?.();
+    };
+  }, [loading, persistProgressSnapshot]);
 
   const loadInitialProgress = async () => {
     try {

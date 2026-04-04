@@ -12,25 +12,6 @@
     },
     "plugins": [
       [
-        "react-native-iap",
-        {
-          "skuAndroidList": [
-            "com.iguruapp.bibletrivia.coins_250",
-            "com.iguruapp.bibletrivia.coins_500",
-            "com.iguruapp.bibletrivia.coins_1200",
-            "com.iguruapp.bibletrivia.coins_3000",
-            "com.iguruapp.bibletrivia.coins_7500"
-          ],
-          "skuIosList": [
-            "com.iguruapp.bibletrivia.coins_250",
-            "com.iguruapp.bibletrivia.coins_500",
-            "com.iguruapp.bibletrivia.coins_1200",
-            "com.iguruapp.bibletrivia.coins_3000",
-            "com.iguruapp.bibletrivia.coins_7500"
-          ]
-        }
-      ],
-      [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-2269638303600030~1530181074",
