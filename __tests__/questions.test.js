@@ -45,6 +45,13 @@ describe('Questions Data', () => {
     });
   });
 
+  test('should not contain duplicate question prompts across all difficulties', () => {
+    const allQuestions = [...QUESTIONS.easy, ...QUESTIONS.medium, ...QUESTIONS.hard, ...QUESTIONS.expert];
+    const normalized = allQuestions.map(q => q.question.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim());
+    const unique = new Set(normalized);
+    expect(unique.size).toBe(normalized.length);
+  });
+
   test('references should point to biblical books', () => {
     const allQuestions = [...QUESTIONS.easy, ...QUESTIONS.medium, ...QUESTIONS.hard];
     allQuestions.forEach(q => {

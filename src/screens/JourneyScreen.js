@@ -1,30 +1,33 @@
 import React, { useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Dimensions, Animated, Alert
+  Animated, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress, ERA_ORDER, ERA_REQUIREMENTS, MASTERY_TIERS } from '../context/ProgressContext';
 import { ERAS } from '../data/questions';
-
-const { width } = Dimensions.get('window');
+import useReducedMotion from '../hooks/useReducedMotion';
 
 const ERA_DETAILS = {
   creation: { icon: '🌍', description: 'The beginning of all things.', color: '#4CAF50' },
   patriarchs: { icon: '⛺', description: 'Abraham, Isaac, and Jacob.', color: '#FF9800' },
   exodus: { icon: '🌊', description: 'Freedom from slavery in Egypt.', color: '#2196F3' },
+  wilderness: { icon: '🏜️', description: 'Forty years of wandering.', color: '#FBC02D' },
   conquest: { icon: '🎺', description: 'Entering the Promised Land.', color: '#CDDC39' },
   judges: { icon: '⚔️', description: 'Leaders of Israel before kings.', color: '#795548' },
   unitedKingdom: { icon: '👑', description: 'Saul, David, and Solomon.', color: '#FFC107' },
+  wisdom: { icon: '📜', description: 'Psalms, Proverbs, and more.', color: '#009688' },
   dividedKingdom: { icon: '💔', description: 'Israel and Judah split.', color: '#F44336' },
   prophets: { icon: '📣', description: 'God\'s messengers to His people.', color: '#9C27B0' },
   exile: { icon: '🏺', description: 'Faithfulness in foreign lands.', color: '#607D8B' },
   return: { icon: '🧱', description: 'Rebuilding the walls and Temple.', color: '#8D6E63' },
   intertestamental: { icon: '⏳', description: '400 years of silence.', color: '#BDBDBD' },
   gospels: { icon: '✝️', description: 'The life and ministry of Jesus.', color: '#E91E63' },
+  miracles: { icon: '✨', description: 'Signs and wonders of Jesus.', color: '#03A9F4' },
   parables: { icon: '🌱', description: 'Stories with eternal meaning.', color: '#8BC34A' },
   acts: { icon: '🕊️', description: 'The birth of the Church.', color: '#00BCD4' },
+  missions: { icon: '⛵', description: 'Spreading the Word to nations.', color: '#673AB7' },
   letters: { icon: '📜', description: 'Wisdom for the first believers.', color: '#3F51B5' },
   revelation: { icon: '✨', description: 'The hope of things to come.', color: '#FFEB3B' },
 };
@@ -33,15 +36,38 @@ export default function JourneyScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
   const { progress } = useProgress();
+  const reducedMotion = useReducedMotion();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const lineDrawAnim = useRef(new Animated.Value(0)).current;
+  const cardAnims = useRef(ERA_ORDER.map(() => new Animated.Value(0))).current;
+  const unlockPulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+    if (reducedMotion) {
+      fadeAnim.setValue(1);
+      lineDrawAnim.setValue(1);
+      cardAnims.forEach((anim) => anim.setValue(1));
+      unlockPulseAnim.setValue(1);
+      return;
+    }
+
+    Animated.timing(fadeAnim, { toValue: 1, duration: 320, useNativeDriver: true }).start();
+    Animated.timing(lineDrawAnim, { toValue: 1, duration: 720, useNativeDriver: true }).start();
+    Animated.stagger(
+      40,
+      cardAnims.map((anim) => Animated.timing(anim, { toValue: 1, duration: 300, useNativeDriver: true }))
+    ).start();
+
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(unlockPulseAnim, { toValue: 1.03, duration: 760, useNativeDriver: true }),
+        Animated.timing(unlockPulseAnim, { toValue: 1, duration: 760, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+
+    return () => pulse.stop();
+  }, [cardAnims, fadeAnim, lineDrawAnim, reducedMotion, unlockPulseAnim]);
 
   const getMasteryInfo = (count) => {
     if (count >= MASTERY_TIERS.GOLD) return { label: 'Gold', color: '#FFD700', icon: '🏆', next: null };
@@ -84,18 +110,45 @@ export default function JourneyScreen({ navigation }) {
               const details = ERA_DETAILS[eraKey] || { icon: '📖', description: 'Exploring Scripture.', color: colors.primary };
               const isLast = index === ERA_ORDER.length - 1;
               const mastery = getMasteryInfo(eraProgress);
+              const cardAnim = cardAnims[index];
 
               const nextThreshold = mastery.next;
               const progressToNext = nextThreshold ? Math.min(eraProgress / nextThreshold, 1) : 1;
 
               return (
-                <View key={eraKey} style={styles.eraNodeWrapper}>
+                <Animated.View
+                  key={eraKey}
+                  style={[
+                    styles.eraNodeWrapper,
+                    {
+                      opacity: cardAnim,
+                      transform: [{
+                        translateY: cardAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [24, 0],
+                        }),
+                      }],
+                    },
+                  ]}
+                >
                   {/* Connecting Line */}
                   {!isLast && (
-                    <View style={[
-                      styles.line,
-                      { backgroundColor: isUnlocked && progress.unlockedEras.includes(ERA_ORDER[index+1]) ? details.color : colors.border }
-                    ]} />
+                    <Animated.View
+                      style={[
+                        styles.line,
+                        {
+                          backgroundColor: isUnlocked && progress.unlockedEras.includes(ERA_ORDER[index + 1]) ? details.color : colors.border,
+                          transform: [
+                            {
+                              scaleY: lineDrawAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.2, 1],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
                   )}
 
                   <TouchableOpacity
@@ -113,15 +166,15 @@ export default function JourneyScreen({ navigation }) {
                     }}
                     activeOpacity={0.8}
                   >
-                    <View style={[
+                    <Animated.View style={[
                       styles.iconCircle,
                       !isUnlocked && styles.iconCircleLocked,
-                      isUnlocked && { backgroundColor: details.color + '15' }
+                      isUnlocked && { backgroundColor: details.color + '15', transform: [{ scale: unlockPulseAnim }] }
                     ]}>
                       <Text style={[styles.eraIcon, !isUnlocked && { opacity: 0.5 }]}>
                         {isUnlocked ? details.icon : '🔒'}
                       </Text>
-                    </View>
+                    </Animated.View>
 
                     <View style={styles.eraInfo}>
                       <View style={styles.eraTitleRow}>
@@ -133,9 +186,22 @@ export default function JourneyScreen({ navigation }) {
                           {ERAS[eraKey]}
                         </Text>
                         {isUnlocked && (
-                          <View style={[styles.masteryBadge, { backgroundColor: mastery.color + '20' }]}>
+                          <Animated.View
+                            style={[
+                              styles.masteryBadge,
+                              {
+                                backgroundColor: mastery.color + '20',
+                                transform: [{
+                                  scale: cardAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0.82, 1],
+                                  }),
+                                }],
+                              },
+                            ]}
+                          >
                             <Text style={[styles.masteryText, { color: mastery.color }]}>{mastery.icon} {mastery.label}</Text>
-                          </View>
+                          </Animated.View>
                         )}
                       </View>
                       <Text style={styles.eraDesc} numberOfLines={1}>{details.description}</Text>
@@ -157,7 +223,7 @@ export default function JourneyScreen({ navigation }) {
 
                     <Text style={[styles.arrow, { color: isUnlocked ? details.color : colors.textMuted }]}>›</Text>
                   </TouchableOpacity>
-                </View>
+                </Animated.View>
               );
             })}
           </View>

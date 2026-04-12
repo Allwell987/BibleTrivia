@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { loadAchievements, loadStats, loadStreak } from '../utils/storage';
 import { ACHIEVEMENTS, checkAchievements } from '../data/achievements';
+import useReducedMotion from '../hooks/useReducedMotion';
 
 export default function AchievementsScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
+  const reducedMotion = useReducedMotion();
   const [unlocked, setUnlocked] = useState([]);
   const [stats, setStats] = useState(null);
   const [streak, setStreak] = useState(null);
   const [recentUnlock, setRecentUnlock] = useState(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const cardAnims = useRef(ACHIEVEMENTS.map(() => new Animated.Value(0))).current;
+  const badgeScaleAnim = useRef(new Animated.Value(0.9)).current;
+  const badgeGlowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Promise.all([loadAchievements(), loadStats(), loadStreak()]).then(([a, s, st]) => {
@@ -29,7 +35,7 @@ export default function AchievementsScreen({ navigation }) {
         setUnlocked(prev => [...prev, ...newlyUnlocked]);
       }
     }
-  }, [stats, streak]);
+  }, [stats, streak, unlocked]);
 
   const styles = createStyles(colors);
 
@@ -54,6 +60,58 @@ export default function AchievementsScreen({ navigation }) {
   const unlockedCount = unlocked.length;
   const totalCount = ACHIEVEMENTS.length;
   const progressPct = Math.round((unlockedCount / totalCount) * 100);
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
+  useEffect(() => {
+    if (reducedMotion) {
+      progressAnim.setValue(progressPct / 100);
+      return;
+    }
+
+    Animated.timing(progressAnim, {
+      toValue: progressPct / 100,
+      duration: 520,
+      useNativeDriver: false,
+    }).start();
+  }, [progressAnim, progressPct, reducedMotion]);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      cardAnims.forEach((anim) => anim.setValue(1));
+      return;
+    }
+
+    cardAnims.forEach((anim) => anim.setValue(0));
+    Animated.stagger(
+      35,
+      cardAnims.map((anim) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      )
+    ).start();
+  }, [cardAnims, reducedMotion, unlockedCount]);
+
+  useEffect(() => {
+    if (!recentUnlock || reducedMotion) return undefined;
+
+    badgeScaleAnim.setValue(0.9);
+    badgeGlowAnim.setValue(0);
+    Animated.spring(badgeScaleAnim, { toValue: 1, friction: 7, tension: 140, useNativeDriver: true }).start();
+    const glow = Animated.loop(
+      Animated.sequence([
+        Animated.timing(badgeGlowAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(badgeGlowAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    glow.start();
+    return () => glow.stop();
+  }, [badgeGlowAnim, badgeScaleAnim, recentUnlock, reducedMotion]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,13 +130,38 @@ export default function AchievementsScreen({ navigation }) {
             <Text style={styles.progressCount}>{unlockedCount}/{totalCount}</Text>
           </View>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+            <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
           </View>
           <Text style={styles.progressPct}>{progressPct}% Complete</Text>
         </View>
 
         {recentUnlock && (
-          <View style={styles.newBadge}>
+          <Animated.View
+            style={[
+              styles.newBadge,
+              {
+                transform: [{ scale: badgeScaleAnim }],
+              },
+            ]}
+          >
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.newBadgeGlow,
+                {
+                  opacity: badgeGlowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.12, 0.32],
+                  }),
+                  transform: [{
+                    scale: badgeGlowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.94, 1.08],
+                    }),
+                  }],
+                },
+              ]}
+            />
             <Text style={styles.newBadgeIcon}>🎉</Text>
             <View style={styles.newBadgeText}>
               <Text style={styles.newBadgeTitle}>New Achievement!</Text>
@@ -86,19 +169,32 @@ export default function AchievementsScreen({ navigation }) {
                 {ACHIEVEMENTS.find(a => a.id === recentUnlock)?.title}
               </Text>
             </View>
-          </View>
+          </Animated.View>
         )}
 
         <Text style={styles.sectionTitle}>All Achievements</Text>
 
-        {ACHIEVEMENTS.map((achievement) => {
+        {ACHIEVEMENTS.map((achievement, index) => {
           const isUnlocked = unlocked.includes(achievement.id);
           const progress = getAchievementProgress(achievement);
+          const cardAnim = cardAnims[index];
 
           return (
-            <View
+            <Animated.View
               key={achievement.id}
-              style={[styles.achievementCard, !isUnlocked && styles.lockedCard]}
+              style={[
+                styles.achievementCard,
+                !isUnlocked && styles.lockedCard,
+                {
+                  opacity: cardAnim,
+                  transform: [{
+                    translateY: cardAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [18, 0],
+                    }),
+                  }],
+                },
+              ]}
             >
               <View style={[styles.iconWrap, !isUnlocked && styles.lockedIcon]}>
                 <Text style={styles.icon}>{achievement.icon}</Text>
@@ -124,7 +220,7 @@ export default function AchievementsScreen({ navigation }) {
                   <Text style={styles.checkText}>✓</Text>
                 </View>
               )}
-            </View>
+            </Animated.View>
           );
         })}
 
@@ -158,6 +254,16 @@ const createStyles = (colors) => StyleSheet.create({
   newBadge: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary + '20',
     borderRadius: 12, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: colors.primary,
+    position: 'relative', overflow: 'hidden',
+  },
+  newBadgeGlow: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: 12,
+    backgroundColor: colors.primary + '40',
   },
   newBadgeIcon: { fontSize: 24, marginRight: 12 },
   newBadgeText: { flex: 1 },

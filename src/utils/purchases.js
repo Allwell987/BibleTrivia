@@ -4,12 +4,17 @@ import { Platform } from 'react-native';
 let Purchases = null;
 let RevenueCatUI = null;
 
-try {
-  Purchases = require('react-native-purchases').default;
-  RevenueCatUI = require('react-native-purchases-ui').default;
-} catch (error) {
-  if (__DEV__) {
-    console.log('RevenueCat native modules unavailable in this environment.');
+if (Platform.OS !== 'web') {
+  try {
+    const PurchasesModule = require('react-native-purchases');
+    Purchases = PurchasesModule.default || PurchasesModule;
+
+    const RevenueCatUIModule = require('react-native-purchases-ui');
+    RevenueCatUI = RevenueCatUIModule.default || RevenueCatUIModule;
+  } catch (error) {
+    if (__DEV__) {
+      console.log('RevenueCat native modules unavailable in this environment.');
+    }
   }
 }
 
@@ -315,12 +320,33 @@ export async function restorePurchases() {
  */
 export async function presentPaywall() {
   try {
-    if (!RevenueCatUI || !isPurchasesAvailable()) return false;
+    if (Platform.OS === 'web') {
+      console.warn('RevenueCat Paywalls are not supported on web environment.');
+      return false;
+    }
+
+    if (!RevenueCatUI || !isPurchasesAvailable()) {
+      console.warn('RevenueCatUI or Purchases module not available.');
+      return false;
+    }
+
+    if (typeof RevenueCatUI.presentPaywall !== 'function') {
+      console.warn('RevenueCatUI.presentPaywall is not a function.');
+      return false;
+    }
+
     await RevenueCatUI.presentPaywall();
+
+    // Refresh customer info after paywall closes
     const customerInfo = await Purchases.getCustomerInfo();
     return hasProEntitlement(customerInfo);
   } catch (e) {
-    console.error('Paywall error:', e);
+    // Check for the specific "browser environment" error to provide better feedback
+    if (e?.message?.includes('browser environment') || e?.message?.includes('document is not available')) {
+      console.error('RevenueCat Error: The SDK is trying to use a web implementation in a native environment. This usually means native modules are not correctly linked or the bundler is misconfigured.');
+    } else {
+      console.error('Paywall error:', e);
+    }
     return false;
   }
 }

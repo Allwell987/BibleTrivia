@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, Animated, Dimensions,
-  TextInput, KeyboardAvoidingView, Platform, Alert,
+  StyleSheet, Animated,
+  TextInput, KeyboardAvoidingView, Platform, Alert, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { saveScore } from '../utils/storage';
@@ -11,8 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
 import { showRewardedAd, isAdsAvailable } from '../utils/ads';
 import { trackEvent } from '../utils/analytics';
-
-const { width } = Dimensions.get('window');
+import useReducedMotion from '../hooks/useReducedMotion';
 
 function getGrade(score, total, colors) {
   if (total === 0) return { label: 'Keep reading', emoji: '🙏', color: '#E57373', bgColor: '#E5737320' };
@@ -27,6 +26,7 @@ function getGrade(score, total, colors) {
 export default function ResultScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
+  const reducedMotion = useReducedMotion();
   const {
     score = 0,
     total = 0,
@@ -56,9 +56,14 @@ export default function ResultScreen({ route, navigation }) {
   const [adLoading, setAdLoading] = useState(false);
   const [rewardClaimed, setRewardClaimed] = useState(false);
   const [bonusCoins, setBonusCoins] = useState(0);
+  const [displayPct, setDisplayPct] = useState(0);
 
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const pctAnim = useRef(new Animated.Value(0)).current;
+  const savePanelAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(-1)).current;
+  const rewardFlyAnim = useRef(new Animated.Value(0)).current;
 
   const grade = getGrade(score, total, colors);
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
@@ -68,11 +73,50 @@ export default function ResultScreen({ route, navigation }) {
   const nextDifficultyInfo = nextDifficulty ? getDifficultyInfo(nextDifficulty) : null;
 
   useEffect(() => {
+    if (reducedMotion) {
+      scaleAnim.setValue(1);
+      fadeAnim.setValue(1);
+      pctAnim.setValue(pct);
+      savePanelAnim.setValue(1);
+      setDisplayPct(pct);
+      return undefined;
+    }
+
+    const listenerId = pctAnim.addListener(({ value }) => setDisplayPct(Math.round(value)));
+
     Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, tension: 55, friction: 7, useNativeDriver: true }),
-      Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, tension: 68, friction: 8, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 560, useNativeDriver: true }),
+      Animated.timing(pctAnim, { toValue: pct, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
     ]).start();
-  }, []);
+    Animated.timing(savePanelAnim, {
+      toValue: 1,
+      delay: 180,
+      duration: 340,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+
+    return () => {
+      pctAnim.removeListener(listenerId);
+    };
+  }, [fadeAnim, pct, pctAnim, reducedMotion, savePanelAnim, scaleAnim]);
+
+  useEffect(() => {
+    if (!nextDifficultyInfo?.unlocked || reducedMotion) return undefined;
+
+    shimmerAnim.setValue(-1);
+    const shimmerLoop = Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 1500,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      })
+    );
+    shimmerLoop.start();
+    return () => shimmerLoop.stop();
+  }, [nextDifficultyInfo?.unlocked, reducedMotion, shimmerAnim]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -155,6 +199,15 @@ export default function ResultScreen({ route, navigation }) {
         }
         setBonusCoins(bonus);
         setRewardClaimed(true);
+        if (!reducedMotion) {
+          rewardFlyAnim.setValue(0);
+          Animated.timing(rewardFlyAnim, {
+            toValue: 1,
+            duration: 760,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start();
+        }
         trackEvent('double_reward_ad', { bonus_amount: bonus });
         Alert.alert('Bonus Earned! 🪙', `You've received an extra ${bonus} coins!`);
       }
@@ -177,6 +230,42 @@ export default function ResultScreen({ route, navigation }) {
           <Text style={styles.plusIcon}>+</Text>
         </TouchableOpacity>
       </View>
+      {rewardClaimed && !reducedMotion && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.coinFlyBadge,
+            {
+              opacity: rewardFlyAnim.interpolate({
+                inputRange: [0, 0.75, 1],
+                outputRange: [0, 1, 0],
+              }),
+              transform: [
+                {
+                  translateY: rewardFlyAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -190],
+                  }),
+                },
+                {
+                  translateX: rewardFlyAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 20],
+                  }),
+                },
+                {
+                  scale: rewardFlyAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0.92, 1.03, 0.88],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.coinFlyText}>+{bonusCoins} 🪙</Text>
+        </Animated.View>
+      )}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -185,7 +274,7 @@ export default function ResultScreen({ route, navigation }) {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Animated.View style={[styles.bubble, { transform: [{ scale: scaleAnim }] }]}>
             <Text style={styles.bubbleEmoji}>{grade.emoji}</Text>
-            <Text style={styles.bubblePct}>{pct}%</Text>
+            <Text style={styles.bubblePct}>{displayPct}%</Text>
             <Text style={styles.bubbleRaw}>{score} / {total} correct</Text>
           </Animated.View>
 
@@ -220,6 +309,23 @@ export default function ResultScreen({ route, navigation }) {
             {nextDifficultyInfo?.unlocked && (
               <View style={[styles.newUnlockBanner, { backgroundColor: colors.success + '20' }]}>
                 <Text style={styles.newUnlockText}>🔓 {nextDifficulty.charAt(0).toUpperCase() + nextDifficulty.slice(1)} Mode is unlocked!</Text>
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.unlockShimmer,
+                    {
+                      transform: [
+                        {
+                          translateX: shimmerAnim.interpolate({
+                            inputRange: [-1, 1],
+                            outputRange: [-260, 260],
+                          }),
+                        },
+                        { rotate: '15deg' },
+                      ],
+                    },
+                  ]}
+                />
               </View>
             )}
 
@@ -229,8 +335,20 @@ export default function ResultScreen({ route, navigation }) {
               <View style={styles.divLine} />
             </View>
 
-            {!saved ? (
-              <View style={styles.saveBox}>
+            <Animated.View
+              style={{
+                width: '100%',
+                opacity: savePanelAnim,
+                transform: [{
+                  translateY: savePanelAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [24, 0],
+                  }),
+                }],
+              }}
+            >
+              {!saved ? (
+                <View style={styles.saveBox}>
                 <Text style={styles.saveTitle}>Save to Leaderboard</Text>
                 <TextInput
                   style={styles.nameInput}
@@ -279,26 +397,27 @@ export default function ResultScreen({ route, navigation }) {
                     </View>
                   </View>
                 )}
-              </View>
-            ) : (
-              <View style={[styles.savedBox, { borderColor: grade.color, borderWidth: 1 }]}>
-                <Text style={[styles.savedText, { color: grade.color }]}>
-                  {savedRank === 1
-                    ? '🥇 New Best on ' + difficulty.charAt(0).toUpperCase() + difficulty.slice(1) + '!'
-                    : savedRank
-                      ? `✓ Ranked #${savedRank} on ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}!`
-                      : '✓ Score saved!'}
-                </Text>
-                <View style={styles.savedActions}>
-                  <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
-                    <Text style={styles.viewLbText}>Leaderboard →</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
-                    <Text style={styles.shareText}>{sharing ? 'Sharing...' : 'Share Result'}</Text>
-                  </TouchableOpacity>
                 </View>
-              </View>
-            )}
+              ) : (
+                <View style={[styles.savedBox, { borderColor: grade.color, borderWidth: 1 }]}>
+                  <Text style={[styles.savedText, { color: grade.color }]}>
+                    {savedRank === 1
+                      ? '🥇 New Best on ' + difficulty.charAt(0).toUpperCase() + difficulty.slice(1) + '!'
+                      : savedRank
+                        ? `✓ Ranked #${savedRank} on ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}!`
+                        : '✓ Score saved!'}
+                  </Text>
+                  <View style={styles.savedActions}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
+                      <Text style={styles.viewLbText}>Leaderboard →</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
+                      <Text style={styles.shareText}>{sharing ? 'Sharing...' : 'Share Result'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </Animated.View>
 
             {wrong.length === 0 && total > 0 && (
               <View style={[styles.perfectBox, { backgroundColor: '#FFD70015' }]}>
@@ -327,7 +446,9 @@ export default function ResultScreen({ route, navigation }) {
                 <Text style={styles.didYouKnowTitle}>Did You Know?</Text>
                 {didYouKnow.question ? <Text style={styles.didYouKnowQuestion}>{didYouKnow.question}</Text> : null}
                 <Text style={styles.didYouKnowFact}>{didYouKnow.fact}</Text>
-                <Text style={styles.didYouKnowReflection}>{didYouKnow.reflection}</Text>
+                {isDaily && didYouKnow.reflection ? (
+                  <Text style={styles.didYouKnowReflection}>{didYouKnow.reflection}</Text>
+                ) : null}
                 {didYouKnow.reference ? <Text style={styles.didYouKnowRef}>- {didYouKnow.reference}</Text> : null}
               </View>
             )}
@@ -436,8 +557,23 @@ const createStyles = (colors, grade) => StyleSheet.create({
   body: { alignItems: 'center', width: '100%' },
   gradeLabel: { fontSize: 32, fontWeight: '900', marginBottom: 6 },
   diffLabel: { fontSize: 12, color: colors.textSecondary, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 28, fontWeight: '700' },
-  newUnlockBanner: { padding: 16, borderRadius: 16, marginBottom: 24, width: '100%', alignItems: 'center' },
+  newUnlockBanner: {
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+    width: '100%',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
   newUnlockText: { color: colors.success, fontWeight: '800', fontSize: 15 },
+  unlockShimmer: {
+    position: 'absolute',
+    top: -30,
+    bottom: -30,
+    width: 120,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+  },
   divider: { flexDirection: 'row', alignItems: 'center', width: '75%', marginBottom: 24 },
   divLine: { flex: 1, height: 1, backgroundColor: colors.border },
   divIcon: { color: colors.primary, fontSize: 14, marginHorizontal: 10 },
@@ -572,4 +708,19 @@ const createStyles = (colors, grade) => StyleSheet.create({
   },
   btnSecondaryText: { color: colors.textSecondary, fontSize: 16, fontWeight: '700' },
   bless: { color: colors.textMuted, fontSize: 14, fontStyle: 'italic', fontWeight: '500' },
+  coinFlyBadge: {
+    position: 'absolute',
+    right: 28,
+    top: 300,
+    zIndex: 30,
+    backgroundColor: '#FFD700',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  coinFlyText: {
+    color: '#3D2B00',
+    fontSize: 12,
+    fontWeight: '900',
+  },
 });

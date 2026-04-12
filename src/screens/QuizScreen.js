@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, Alert, Modal, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, Alert, Modal, Dimensions, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { QUESTIONS, shuffleArray, ERAS } from '../data/questions';
 
 import useTimer from '../hooks/useTimer';
+import useReducedMotion from '../hooks/useReducedMotion';
 import { playCorrect, playWrong, playTick, playPowerup } from '../utils/sounds';
 import { TimerBar, ProgressBar, QuestionCard, AnswerOption } from '../components';
 import { useTheme } from '../context/ThemeContext';
@@ -36,6 +37,7 @@ export default function QuizScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
   const { progress, spendCoins, completeDailyChallenge, updateProgress } = useProgress();
+  const reducedMotion = useReducedMotion();
 
   const {
     difficulty = 'medium',
@@ -104,9 +106,11 @@ export default function QuizScreen({ route, navigation }) {
   const selectedRef = useRef(null);
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const questionSlideAnim = useRef(new Animated.Value(0)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const timerAnim = useRef(new Animated.Value(1)).current;
+  const timerPulseAnim = useRef(new Animated.Value(1)).current;
   const powerupScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -164,8 +168,12 @@ export default function QuizScreen({ route, navigation }) {
     if (success) {
       playPowerup();
       setShowVerse(true);
-      powerupScale.setValue(0);
-      Animated.spring(powerupScale, { toValue: 1, friction: 8, useNativeDriver: true }).start();
+      if (reducedMotion) {
+        powerupScale.setValue(1);
+      } else {
+        powerupScale.setValue(0);
+        Animated.spring(powerupScale, { toValue: 1, friction: 7, useNativeDriver: true }).start();
+      }
       trackEvent('use_powerup', { type: 'reveal_verse', question: current.question });
     }
   };
@@ -197,11 +205,26 @@ export default function QuizScreen({ route, navigation }) {
 
   useEffect(() => {
     if (timerEnabled && !selectedRef.current && timeLeft <= 5 && timeLeft > 0) playTick();
-    Animated.timing(timerAnim, { toValue: timerEnabled ? (timeLeft / seconds) : 1, duration: 900, useNativeDriver: false }).start();
-  }, [timeLeft, timerEnabled]);
+    Animated.timing(timerAnim, { toValue: timerEnabled ? (timeLeft / seconds) : 1, duration: 750, useNativeDriver: false }).start();
+
+    if (reducedMotion) {
+      timerPulseAnim.setValue(1);
+      return;
+    }
+
+    if (timerEnabled && !selectedRef.current && timeLeft <= 5 && timeLeft > 0) {
+      timerPulseAnim.setValue(1);
+      Animated.sequence([
+        Animated.timing(timerPulseAnim, { toValue: 1.06, duration: 170, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(timerPulseAnim, { toValue: 1, duration: 170, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ]).start();
+    } else {
+      timerPulseAnim.setValue(1);
+    }
+  }, [reducedMotion, seconds, timeLeft, timerAnim, timerEnabled, timerPulseAnim]);
 
   useEffect(() => {
-    Animated.timing(progressAnim, { toValue: index / total, duration: 400, useNativeDriver: false }).start();
+    Animated.timing(progressAnim, { toValue: index / total, duration: 320, useNativeDriver: false }).start();
   }, [index, total]);
 
   const handleAnswer = (option) => {
@@ -223,17 +246,19 @@ export default function QuizScreen({ route, navigation }) {
       playWrong();
       vibrateOnWrong();
       setWrongAnswers(prev => [...prev, current]);
-      Animated.sequence([
-        Animated.timing(shakeAnim, { toValue: 9, duration: 55, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: -9, duration: 55, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 0, duration: 55, useNativeDriver: true }),
-      ]).start();
+      if (!reducedMotion) {
+        Animated.sequence([
+          Animated.timing(shakeAnim, { toValue: 8, duration: 45, useNativeDriver: true }),
+          Animated.timing(shakeAnim, { toValue: -8, duration: 45, useNativeDriver: true }),
+          Animated.timing(shakeAnim, { toValue: 0, duration: 45, useNativeDriver: true }),
+        ]).start();
+      }
     }
 
     // Small delay before showing insight for captivation
     setTimeout(() => {
       setShowInsight(true);
-    }, 600);
+    }, 500);
   };
 
   const handleNext = () => {
@@ -273,14 +298,33 @@ export default function QuizScreen({ route, navigation }) {
       return;
     }
 
-    Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
+    if (reducedMotion) {
       setIndex(i => i + 1);
       setSelected(null);
       selectedRef.current = null;
       setHiddenOptions([]);
       setShowVerse(false);
       resetTimer();
-      Animated.timing(fadeAnim, { toValue: 1, duration: 280, useNativeDriver: true }).start();
+      questionSlideAnim.setValue(0);
+      fadeAnim.setValue(1);
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(questionSlideAnim, { toValue: -24, duration: 150, useNativeDriver: true }),
+    ]).start(() => {
+      setIndex(i => i + 1);
+      setSelected(null);
+      selectedRef.current = null;
+      setHiddenOptions([]);
+      setShowVerse(false);
+      resetTimer();
+      questionSlideAnim.setValue(22);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.timing(questionSlideAnim, { toValue: 0, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
     });
   };
 
@@ -319,11 +363,18 @@ export default function QuizScreen({ route, navigation }) {
 
       <ProgressBar current={index + 1} total={total} diffColor={diffColor} progressAnim={progressAnim} />
       {timerEnabled && (
-        <TimerBar timeLeft={timeLeft} totalSeconds={seconds} diffColor={diffColor} timerAnim={timerAnim} selected={selected} />
+        <TimerBar
+          timeLeft={timeLeft}
+          totalSeconds={seconds}
+          diffColor={diffColor}
+          timerAnim={timerAnim}
+          timerPulseAnim={timerPulseAnim}
+          selected={selected}
+        />
       )}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <Animated.View style={{ opacity: fadeAnim, width: '100%' }}>
+        <Animated.View style={{ opacity: fadeAnim, width: '100%', transform: [{ translateX: questionSlideAnim }] }}>
           <Text style={[styles.categoryBadge, { color: diffColor }]}>
             {era ? ERAS[era].toUpperCase() : current.category?.toUpperCase() || difficulty.toUpperCase()}
           </Text>
@@ -388,10 +439,13 @@ export default function QuizScreen({ route, navigation }) {
             <Text style={styles.insightTitle}>Insight</Text>
             <Text style={styles.insightText}>{current.insight || current.explanation}</Text>
 
-            <View style={styles.divider} />
-
-            <Text style={styles.reflectionTitle}>Reflection</Text>
-            <Text style={styles.reflectionText}>{current.reflection || 'How can you apply this truth today?'}</Text>
+            {isDaily && (
+              <>
+                <View style={styles.divider} />
+                <Text style={styles.reflectionTitle}>Reflection</Text>
+                <Text style={styles.reflectionText}>{current.reflection || 'How can you apply this truth today?'}</Text>
+              </>
+            )}
 
             <TouchableOpacity style={[styles.continueBtn, { backgroundColor: diffColor }]} onPress={handleNext} activeOpacity={0.8}>
               <Text style={styles.continueText}>Continue</Text>

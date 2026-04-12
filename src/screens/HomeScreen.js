@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress, STREAK_MILESTONES } from '../context/ProgressContext';
 import { getDailyVerse } from '../data/questions';
+import useReducedMotion from '../hooks/useReducedMotion';
 
 const { width } = Dimensions.get('window');
 
@@ -21,8 +22,13 @@ export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
   const { isUnlocked, progress, getStreakMilestone } = useProgress();
+  const reducedMotion = useReducedMotion();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
+  const journeyAnim = useRef(new Animated.Value(0)).current;
+  const dailyAnim = useRef(new Animated.Value(0)).current;
+  const dailyPulseAnim = useRef(new Animated.Value(1)).current;
+  const difficultyCardAnims = useRef(DIFFICULTIES.map(() => new Animated.Value(0))).current;
   const fireAnim = useRef(new Animated.Value(1)).current;
   const [dailyVerse] = useState(getDailyVerse);
 
@@ -39,24 +45,63 @@ export default function HomeScreen({ navigation }) {
     (progress.dailyChallengesCompleted || 0);
 
   useEffect(() => {
+    if (progress.dailyChallengeCompleted || reducedMotion) {
+      dailyPulseAnim.setValue(1);
+      return undefined;
+    }
+
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(dailyPulseAnim, { toValue: 1.02, duration: 980, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(dailyPulseAnim, { toValue: 1, duration: 980, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [dailyPulseAnim, progress.dailyChallengeCompleted, reducedMotion]);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      fireAnim.setValue(1);
+      return undefined;
+    }
+
     if (progress.currentStreak >= 3) {
       const pulse = Animated.loop(
         Animated.sequence([
-          Animated.timing(fireAnim, { toValue: 1.1, duration: 500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-          Animated.timing(fireAnim, { toValue: 1, duration: 500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(fireAnim, { toValue: 1.08, duration: 430, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(fireAnim, { toValue: 1, duration: 430, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         ])
       );
       pulse.start();
       return () => pulse.stop();
     }
-  }, [progress.currentStreak]);
+  }, [fireAnim, progress.currentStreak, reducedMotion]);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
+    if (reducedMotion) {
+      fadeAnim.setValue(1);
+      slideAnim.setValue(0);
+      journeyAnim.setValue(1);
+      dailyAnim.setValue(1);
+      difficultyCardAnims.forEach((anim) => anim.setValue(1));
+      return;
+    }
+
+    Animated.stagger(90, [
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 560, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 560, useNativeDriver: true }),
+      ]),
+      Animated.timing(journeyAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(dailyAnim, { toValue: 1, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
-  }, []);
+
+    Animated.stagger(
+      70,
+      difficultyCardAnims.map((anim) => Animated.timing(anim, { toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }))
+    ).start();
+  }, [dailyAnim, difficultyCardAnims, fadeAnim, journeyAnim, reducedMotion, slideAnim]);
 
   const styles = createStyles(colors);
 
@@ -95,57 +140,84 @@ export default function HomeScreen({ navigation }) {
           )}
         </Animated.View>
 
-        <TouchableOpacity
-          style={styles.journeyBtn}
-          onPress={() => navigation.navigate('Journey')}
-          activeOpacity={0.9}
+        <Animated.View
+          style={{
+            opacity: journeyAnim,
+            transform: [{
+              translateY: journeyAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [26, 0],
+              })
+            }],
+          }}
         >
-          <ImageBackground
-            source={{ uri: 'https://images.unsplash.com/photo-1504052434569-70ad5816544a?q=80&w=1000&auto=format&fit=crop' }}
-            style={styles.journeyBg}
-            imageStyle={{ borderRadius: 24 }}
+          <TouchableOpacity
+            style={styles.journeyBtn}
+            onPress={() => navigation.navigate('Journey')}
+            activeOpacity={0.9}
           >
-            <View style={styles.journeyOverlay}>
-              <View style={styles.journeyContent}>
-                <View style={styles.journeyIconContainer}>
-                  <Text style={styles.journeyEmoji}>🧭</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.journeyTitle}>Biblical Journey</Text>
-                  <Text style={styles.journeySub}>Trace the story from Creation to Paul</Text>
-                </View>
-                <View style={styles.journeyArrowCircle}>
-                  <Text style={styles.journeyArrow}>›</Text>
+            <ImageBackground
+              source={{ uri: 'https://images.unsplash.com/photo-1504052434569-70ad5816544a?q=80&w=1000&auto=format&fit=crop' }}
+              style={styles.journeyBg}
+              imageStyle={{ borderRadius: 24 }}
+            >
+              <View style={styles.journeyOverlay}>
+                <View style={styles.journeyContent}>
+                  <View style={styles.journeyIconContainer}>
+                    <Text style={styles.journeyEmoji}>🧭</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.journeyTitle}>Biblical Journey</Text>
+                    <Text style={styles.journeySub}>Trace the story from Creation to Paul</Text>
+                  </View>
+                  <View style={styles.journeyArrowCircle}>
+                    <Text style={styles.journeyArrow}>›</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          </ImageBackground>
-        </TouchableOpacity>
+            </ImageBackground>
+          </TouchableOpacity>
+        </Animated.View>
 
-        <TouchableOpacity
-          style={[styles.dailyChallengeBtn, progress.dailyChallengeCompleted ? styles.dailyChallengeDone : { backgroundColor: colors.primary }]}
-          onPress={() => {
-            if (progress.dailyChallengeCompleted) {
-              Alert.alert('Completed', "You have already finished today's challenge. Come back tomorrow!");
-            } else {
-              navigation.navigate('Quiz', { difficulty: 'mixed', seconds: 15, isDaily: true });
-            }
+        <Animated.View
+          style={{
+            opacity: dailyAnim,
+            transform: [
+              {
+                translateY: dailyAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [22, 0],
+                }),
+              },
+              { scale: dailyPulseAnim },
+            ],
           }}
-          activeOpacity={0.8}
         >
-          <View style={styles.dailyIconBox}>
-            <Text style={styles.dailyEmoji}>{progress.dailyChallengeCompleted ? '✅' : '☀️'}</Text>
-          </View>
-          <View style={styles.dailyTextContainer}>
-            <Text style={[styles.dailyTitle, { color: progress.dailyChallengeCompleted ? colors.text : '#FFF' }]}>
-              Daily Challenge
-            </Text>
-            <Text style={[styles.dailySub, { color: progress.dailyChallengeCompleted ? colors.textMuted : '#FFF' }]}>
-              {progress.dailyChallengeCompleted ? 'Come back tomorrow!' : '5 Questions · 50 ✨ bonus'}
-            </Text>
-          </View>
-          {!progress.dailyChallengeCompleted && <Text style={styles.playIcon}>▶</Text>}
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.dailyChallengeBtn, progress.dailyChallengeCompleted ? styles.dailyChallengeDone : { backgroundColor: colors.primary }]}
+            onPress={() => {
+              if (progress.dailyChallengeCompleted) {
+                Alert.alert('Completed', "You have already finished today's challenge. Come back tomorrow!");
+              } else {
+                navigation.navigate('Quiz', { difficulty: 'mixed', seconds: 15, isDaily: true });
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.dailyIconBox}>
+              <Text style={styles.dailyEmoji}>{progress.dailyChallengeCompleted ? '✅' : '☀️'}</Text>
+            </View>
+            <View style={styles.dailyTextContainer}>
+              <Text style={[styles.dailyTitle, { color: progress.dailyChallengeCompleted ? colors.text : '#FFF' }]}>
+                Daily Challenge
+              </Text>
+              <Text style={[styles.dailySub, { color: progress.dailyChallengeCompleted ? colors.textMuted : '#FFF' }]}>
+                {progress.dailyChallengeCompleted ? 'Come back tomorrow!' : '5 Questions · 50 ✨ bonus'}
+              </Text>
+            </View>
+            {!progress.dailyChallengeCompleted && <Text style={styles.playIcon}>▶</Text>}
+          </TouchableOpacity>
+        </Animated.View>
 
         <View style={styles.dailyVerse}>
           <View style={styles.verseInner}>
@@ -182,23 +254,43 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.chooseLabel}>Select Difficulty</Text>
 
         <View style={styles.difficultyGrid}>
-          {DIFFICULTIES.map((d) => {
+          {DIFFICULTIES.map((d, index) => {
             const locked = !isUnlocked(d.key);
             return (
-              <TouchableOpacity
+              <Animated.View
                 key={d.key}
-                style={[styles.diffCard, locked ? styles.diffCardLocked : { backgroundColor: d.color }]}
-                onPress={() => { if (!locked) navigation.navigate('Quiz', { difficulty: d.key, seconds: d.seconds }); }}
-                activeOpacity={0.75}
+                style={{
+                  opacity: difficultyCardAnims[index],
+                  transform: [
+                    {
+                      translateY: difficultyCardAnims[index].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [16, 0],
+                      }),
+                    },
+                    {
+                      scale: difficultyCardAnims[index].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.96, 1],
+                      }),
+                    },
+                  ],
+                }}
               >
-                <View style={styles.diffContent}>
-                  <View style={styles.diffHeader}>
-                    <Text style={[styles.diffLabel, locked && { color: colors.textMuted }]}>{d.label}</Text>
-                    {locked ? <Text style={styles.lockIcon}>🔒</Text> : <Text style={styles.playIconSmall}>▶</Text>}
+                <TouchableOpacity
+                  style={[styles.diffCard, locked ? styles.diffCardLocked : { backgroundColor: d.color }]}
+                  onPress={() => { if (!locked) navigation.navigate('Quiz', { difficulty: d.key, seconds: d.seconds }); }}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.diffContent}>
+                    <View style={styles.diffHeader}>
+                      <Text style={[styles.diffLabel, locked && { color: colors.textMuted }]}>{d.label}</Text>
+                      {locked ? <Text style={styles.lockIcon}>🔒</Text> : <Text style={styles.playIconSmall}>▶</Text>}
+                    </View>
+                    <Text style={[styles.diffSub, locked && { color: colors.textMuted }]}>{d.subtitle}</Text>
                   </View>
-                  <Text style={[styles.diffSub, locked && { color: colors.textMuted }]}>{d.subtitle}</Text>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </Animated.View>
             );
           })}
         </View>

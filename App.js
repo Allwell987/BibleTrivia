@@ -59,22 +59,22 @@ function AppNavigator() {
   return (
     <Stack.Navigator
       initialRouteName={isOnboard ? 'Home' : 'Onboarding'}
-      screenOptions={{ headerShown: false, animation: 'fade' }}
+      screenOptions={{ headerShown: false }}
     >
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="Journey" component={JourneyScreen} />
-      <Stack.Screen name="Collection" component={CollectionScreen} />
-      <Stack.Screen name="Reflections" component={ReflectionsScreen} />
-      <Stack.Screen name="Quiz" component={QuizScreen} />
-      <Stack.Screen name="Result" component={ResultScreen} />
-      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="Statistics" component={StatisticsScreen} />
-      <Stack.Screen name="Achievements" component={AchievementsScreen} />
-      <Stack.Screen name="Challenge" component={ChallengeScreen} />
-      <Stack.Screen name="Shop" component={ShopScreen} />
-      <Stack.Screen name="CustomQuiz" component={CustomQuizScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="Journey" component={JourneyScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Collection" component={CollectionScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Reflections" component={ReflectionsScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Quiz" component={QuizScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Result" component={ResultScreen} options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Achievements" component={AchievementsScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Challenge" component={ChallengeScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Shop" component={ShopScreen} options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="CustomQuiz" component={CustomQuizScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }

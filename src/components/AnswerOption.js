@@ -1,55 +1,140 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import useReducedMotion from '../hooks/useReducedMotion';
 
 const { width } = Dimensions.get('window');
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 const AnswerOption = ({ option, index, selected, correctAnswer, isTimeout, onSelect, isHidden }) => {
   const { theme } = useTheme();
   const { colors } = theme;
-
-  if (isHidden && !selected) return null;
+  const reducedMotion = useReducedMotion();
+  const sx = styles(colors);
+  const pressScale = useRef(new Animated.Value(1)).current;
+  const feedbackScale = useRef(new Animated.Value(1)).current;
+  const wrongShake = useRef(new Animated.Value(0)).current;
+  const collapseAnim = useRef(new Animated.Value(isHidden && !selected ? 1 : 0)).current;
 
   const letter = String.fromCharCode(65 + index);
 
-  let containerStyle = styles(colors).optBtn;
-  let letterBoxStyle = styles(colors).letterBox;
-  let letterTextStyle = styles(colors).letterText;
+  let containerStyle = sx.optBtn;
+  let letterBoxStyle = sx.letterBox;
+  let letterTextStyle = sx.letterText;
   let textColor = colors.textSecondary;
 
   if (selected) {
     if (option === correctAnswer) {
-      containerStyle = [styles(colors).optBtn, styles(colors).optCorrect];
-      letterBoxStyle = [styles(colors).letterBox, styles(colors).letterCorrect];
-      letterTextStyle = [styles(colors).letterText, styles(colors).letterTextCorrect];
+      containerStyle = [sx.optBtn, sx.optCorrect];
+      letterBoxStyle = [sx.letterBox, sx.letterCorrect];
+      letterTextStyle = [sx.letterText, sx.letterTextCorrect];
       textColor = colors.success;
     } else if (option === selected && !isTimeout) {
-      containerStyle = [styles(colors).optBtn, styles(colors).optWrong];
-      letterBoxStyle = [styles(colors).letterBox, styles(colors).letterWrong];
-      letterTextStyle = [styles(colors).letterText, styles(colors).letterTextWrong];
+      containerStyle = [sx.optBtn, sx.optWrong];
+      letterBoxStyle = [sx.letterBox, sx.letterWrong];
+      letterTextStyle = [sx.letterText, sx.letterTextWrong];
       textColor = colors.error;
     } else {
-      containerStyle = [styles(colors).optBtn, styles(colors).optDim];
+      containerStyle = [sx.optBtn, sx.optDim];
       textColor = colors.textMuted;
     }
   }
 
+  useEffect(() => {
+    if (reducedMotion) {
+      collapseAnim.setValue(isHidden && !selected ? 1 : 0);
+      return;
+    }
+
+    Animated.timing(collapseAnim, {
+      toValue: isHidden && !selected ? 1 : 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  }, [collapseAnim, isHidden, reducedMotion, selected]);
+
+  useEffect(() => {
+    if (!selected) {
+      feedbackScale.setValue(1);
+      wrongShake.setValue(0);
+      return;
+    }
+
+    if (reducedMotion) return;
+
+    if (option === correctAnswer) {
+      Animated.sequence([
+        Animated.timing(feedbackScale, { toValue: 1.04, duration: 110, useNativeDriver: true }),
+        Animated.spring(feedbackScale, { toValue: 1, friction: 6, tension: 130, useNativeDriver: true }),
+      ]).start();
+    } else if (option === selected && !isTimeout) {
+      Animated.sequence([
+        Animated.timing(wrongShake, { toValue: 6, duration: 42, useNativeDriver: true }),
+        Animated.timing(wrongShake, { toValue: -6, duration: 42, useNativeDriver: true }),
+        Animated.timing(wrongShake, { toValue: 3, duration: 38, useNativeDriver: true }),
+        Animated.timing(wrongShake, { toValue: 0, duration: 38, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [feedbackScale, correctAnswer, isTimeout, option, reducedMotion, selected, wrongShake]);
+
+  const handlePressIn = () => {
+    if (reducedMotion || selected || (isHidden && !selected)) return;
+    Animated.spring(pressScale, { toValue: 0.98, tension: 220, friction: 10, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    if (reducedMotion) return;
+    Animated.spring(pressScale, { toValue: 1, tension: 200, friction: 12, useNativeDriver: true }).start();
+  };
+
+  const contentOpacity = collapseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+  const contentMaxHeight = collapseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [140, 0],
+  });
+  const contentMargin = collapseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [9, 0],
+  });
+
   return (
-    <TouchableOpacity
-      style={containerStyle}
-      onPress={() => onSelect(option)}
-      disabled={!!selected}
-      activeOpacity={0.75}
-      accessibilityRole="button"
-      accessibilityLabel={`Answer ${letter}: ${option}`}
-      accessibilityHint={selected ? 'Answer is locked for this question' : `Select answer ${letter}`}
-      accessibilityState={{ disabled: !!selected }}
+    <Animated.View
+      style={{
+        maxHeight: contentMaxHeight,
+        opacity: contentOpacity,
+        marginBottom: contentMargin,
+        overflow: 'hidden',
+      }}
     >
-      <View style={letterBoxStyle}>
-        <Text style={letterTextStyle}>{letter}</Text>
-      </View>
-      <Text style={[styles(colors).optText, { color: textColor }]}>{option}</Text>
-    </TouchableOpacity>
+      <AnimatedTouchable
+        style={[
+          containerStyle,
+          {
+            transform: [
+              { scale: Animated.multiply(pressScale, feedbackScale) },
+              { translateX: wrongShake },
+            ],
+          },
+        ]}
+        onPress={() => onSelect(option)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={!!selected || (isHidden && !selected)}
+        activeOpacity={0.88}
+        accessibilityRole="button"
+        accessibilityLabel={`Answer ${letter}: ${option}`}
+        accessibilityHint={selected ? 'Answer is locked for this question' : `Select answer ${letter}`}
+        accessibilityState={{ disabled: !!selected || (isHidden && !selected) }}
+      >
+        <View style={letterBoxStyle}>
+          <Text style={letterTextStyle}>{letter}</Text>
+        </View>
+        <Text style={[sx.optText, { color: textColor }]}>{option}</Text>
+      </AnimatedTouchable>
+    </Animated.View>
   );
 };
 
@@ -64,7 +149,6 @@ const styles = (colors) => StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 13,
     paddingHorizontal: 16,
-    marginBottom: 9,
   },
   optCorrect: { borderColor: colors.success, backgroundColor: colors.success + '15' },
   optWrong: { borderColor: colors.error, backgroundColor: colors.error + '15' },

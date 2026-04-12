@@ -13,6 +13,7 @@ const DEFAULT_PROGRESS = {
   easyHighScore: 0,
   mediumHighScore: 0,
   hardHighScore: 0,
+  expertHighScore: 0,
   easyCompleted: 0,
   mediumCompleted: 0,
   hardCompleted: 0,
@@ -49,17 +50,21 @@ const DEFAULT_PROGRESS = {
     creation: 0,
     patriarchs: 0,
     exodus: 0,
+    wilderness: 0,
     conquest: 0,
     judges: 0,
     unitedKingdom: 0,
+    wisdom: 0,
     dividedKingdom: 0,
     prophets: 0,
     exile: 0,
     return: 0,
     intertestamental: 0,
     gospels: 0,
+    miracles: 0,
     parables: 0,
     acts: 0,
+    missions: 0,
     letters: 0,
     revelation: 0,
   },
@@ -69,17 +74,21 @@ export const ERA_ORDER = [
   'creation',
   'patriarchs',
   'exodus',
+  'wilderness',
   'conquest',
   'judges',
   'unitedKingdom',
+  'wisdom',
   'dividedKingdom',
   'prophets',
   'exile',
   'return',
   'intertestamental',
   'gospels',
+  'miracles',
   'parables',
   'acts',
+  'missions',
   'letters',
   'revelation',
 ];
@@ -347,6 +356,7 @@ export function ProgressProvider({ children }) {
     merged.easyHighScore = Math.max(safeLocal.easyHighScore || 0, safeCloud.easyHighScore || 0);
     merged.mediumHighScore = Math.max(safeLocal.mediumHighScore || 0, safeCloud.mediumHighScore || 0);
     merged.hardHighScore = Math.max(safeLocal.hardHighScore || 0, safeCloud.hardHighScore || 0);
+    merged.expertHighScore = Math.max(safeLocal.expertHighScore || 0, safeCloud.expertHighScore || 0);
     merged.coins = Math.max(safeLocal.coins || 0, safeCloud.coins || 0);
     merged.totalQuestionsAnswered = Math.max(safeLocal.totalQuestionsAnswered || 0, safeCloud.totalQuestionsAnswered || 0);
     merged.currentStreak = Math.max(safeLocal.currentStreak || 0, safeCloud.currentStreak || 0);
