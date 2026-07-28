@@ -4,6 +4,11 @@ let correctSound = null;
 let wrongSound = null;
 let tickSound = null;
 let powerupSound = null;
+let isEnabled = true;
+
+export function setSoundsEnabled(enabled) {
+  isEnabled = enabled;
+}
 
 export async function loadSounds() {
   try {
@@ -32,7 +37,7 @@ export async function loadSounds() {
 }
 
 async function playSound(player) {
-  if (player) {
+  if (player && isEnabled) {
     try {
       // For short sounds, we often want to restart them if played rapidly
       await player.seekTo(0);

@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { collection, addDoc, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { db, isFirebaseConfigured } from '../config/firebase';
 
 const SCORES_KEY_EASY   = 'bible_trivia_scores_easy';
 const SCORES_KEY_MEDIUM = 'bible_trivia_scores_medium';
@@ -16,8 +18,31 @@ function scoresKey(difficulty) {
   return SCORES_KEY_MEDIUM;
 }
 
-export async function loadScores(difficulty) {
+export async function loadScores(difficulty, { useCloud = false } = {}) {
   try {
+    if (useCloud && isFirebaseConfigured) {
+      const scoresRef = collection(db, 'leaderboard');
+      let q;
+      if (difficulty && difficulty !== 'all') {
+        q = query(
+          scoresRef,
+          where('difficulty', '==', difficulty.toLowerCase()),
+          orderBy('pct', 'desc'),
+          orderBy('score', 'desc'),
+          limit(20)
+        );
+      } else {
+        q = query(
+          scoresRef,
+          orderBy('pct', 'desc'),
+          orderBy('score', 'desc'),
+          limit(20)
+        );
+      }
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
     if (difficulty) {
       const raw = await AsyncStorage.getItem(scoresKey(difficulty));
       return raw ? JSON.parse(raw) : [];
@@ -28,16 +53,15 @@ export async function loadScores(difficulty) {
       loadScores('hard'),
     ]);
     return [...easy, ...medium, ...hard].sort((a, b) => b.pct - a.pct || b.score - a.score);
-  } catch {
+  } catch (error) {
+    console.warn('Failed to load scores:', error);
     return [];
   }
 }
 
-export async function saveScore({ name, score, total, difficulty, timeLeft, date }) {
+export async function saveScore({ name, score, total, difficulty, timeLeft, date, userId = null }) {
   try {
     const effectiveDifficulty = difficulty || 'medium';
-    const key = scoresKey(effectiveDifficulty);
-    const existing = await loadScores(effectiveDifficulty);
     const entry = {
       id: Date.now().toString(),
       name: name || 'Player',
@@ -48,15 +72,34 @@ export async function saveScore({ name, score, total, difficulty, timeLeft, date
       timeLeft,
       date: date || new Date().toLocaleDateString(),
     };
+
+    // Save locally
+    const key = scoresKey(effectiveDifficulty);
+    const existing = await loadScores(effectiveDifficulty);
     const updated = [entry, ...existing]
       .sort((a, b) => b.pct - a.pct || b.score - a.score)
       .slice(0, MAX_SCORES);
     await AsyncStorage.setItem(key, JSON.stringify(updated));
+
+    // Save to cloud if configured
+    if (isFirebaseConfigured) {
+      try {
+        await addDoc(collection(db, 'leaderboard'), {
+          ...entry,
+          userId,
+          createdAt: Timestamp.now(),
+        });
+      } catch (cloudError) {
+        console.warn('Cloud score sync failed:', cloudError);
+      }
+    }
+
     await updateStats({ score, total, difficulty: effectiveDifficulty });
     await updateStreak();
     const rank = updated.findIndex(e => e.id === entry.id) + 1;
     return { entries: updated, rank, isPersonalBest: rank === 1 };
-  } catch {
+  } catch (error) {
+    console.warn('Failed to save score:', error);
     return { entries: [], rank: null, isPersonalBest: false };
   }
 }

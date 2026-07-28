@@ -46,6 +46,11 @@ describe('ResultScreen did you know', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('renders Did You Know card when payload exists', () => {

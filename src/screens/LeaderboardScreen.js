@@ -12,19 +12,21 @@ import { useTheme } from '../context/ThemeContext';
 const DIFF_COLOR = { easy: '#4CAF82', medium: '#E6A817', hard: '#D95F4B' };
 const MEDAL = ['🥇', '🥈', '🥉'];
 const FILTERS = ['All', 'Easy', 'Medium', 'Hard'];
+const SCOPE = ['Local', 'Global'];
 
 export default function LeaderboardScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
   const [scores, setScores] = useState([]);
   const [filter, setFilter] = useState('All');
+  const [scope, setScope] = useState('Local');
   const [loading, setLoading] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const fetchScores = async (selectedFilter = filter) => {
+  const fetchScores = async (selectedFilter = filter, selectedScope = scope) => {
     setLoading(true);
     const difficulty = selectedFilter === 'All' ? undefined : selectedFilter.toLowerCase();
-    const data = await loadScores(difficulty);
+    const data = await loadScores(difficulty, { useCloud: selectedScope === 'Global' });
     setScores(data);
     setLoading(false);
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
@@ -32,9 +34,9 @@ export default function LeaderboardScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => {
     fadeAnim.setValue(0);
-    fetchScores(filter);
-    trackEvent('leaderboard_viewed', { filter: filter.toLowerCase() });
-  }, [filter]));
+    fetchScores(filter, scope);
+    trackEvent('leaderboard_viewed', { filter: filter.toLowerCase(), scope: scope.toLowerCase() });
+  }, [filter, scope]));
 
   const handleClear = () => {
     Alert.alert(
@@ -98,6 +100,20 @@ export default function LeaderboardScreen({ navigation }) {
         <View style={styles.divLine} />
       </View>
 
+      <View style={styles.scopeContainer}>
+        {SCOPE.map(s => (
+          <TouchableOpacity
+            key={s}
+            style={[styles.scopeBtn, scope === s && styles.scopeActive]}
+            onPress={() => setScope(s)}
+          >
+            <Text style={[styles.scopeText, scope === s && styles.scopeTextActive]}>
+              {s}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <View style={styles.filters}>
         {FILTERS.map(f => (
           <TouchableOpacity
@@ -157,6 +173,11 @@ const createStyles = (colors) => StyleSheet.create({
   divider: { flexDirection: 'row', alignItems: 'center', width: '70%', marginBottom: 18 },
   divLine: { flex: 1, height: 1, backgroundColor: colors.border },
   divIcon: { color: colors.primary, fontSize: 11, marginHorizontal: 10 },
+  scopeContainer: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 12, padding: 4, marginBottom: 18, borderWidth: 1, borderColor: colors.cardBorder },
+  scopeBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
+  scopeActive: { backgroundColor: colors.primary },
+  scopeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  scopeTextActive: { color: colors.background },
   filters: { flexDirection: 'row', gap: 8, marginBottom: 18 },
   filterBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card },
   filterActive: { borderColor: colors.primary, backgroundColor: colors.primary + '20' },

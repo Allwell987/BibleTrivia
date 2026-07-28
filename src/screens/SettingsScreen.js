@@ -7,6 +7,8 @@ import { useProgress } from '../context/ProgressContext';
 import { updateSetting, loadSettings, resetStats, resetAchievements } from '../utils/storage';
 import { getAnalyticsEvents, clearAnalyticsEvents, trackEvent } from '../utils/analytics';
 import { presentCustomerCenter } from '../utils/purchases';
+import { setHapticsEnabled } from '../utils/haptics';
+import { setSoundsEnabled } from '../utils/sounds';
 
 const TIMER_OPTIONS = [10, 15, 20, 30];
 const PRIVACY_URL = 'https://your-domain.com/privacy-policy';
@@ -54,9 +56,16 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const handleToggle = async (key) => {
-    const newSettings = { ...settings, [key]: !settings[key] };
+    const newValue = !settings[key];
+    const newSettings = { ...settings, [key]: newValue };
     setSettings(newSettings);
-    await updateSetting(key, !settings[key]);
+    await updateSetting(key, newValue);
+
+    if (key === 'hapticEnabled') {
+      setHapticsEnabled(newValue);
+    } else if (key === 'soundEnabled') {
+      setSoundsEnabled(newValue);
+    }
   };
 
   const handleThemeChange = async (themeName) => {

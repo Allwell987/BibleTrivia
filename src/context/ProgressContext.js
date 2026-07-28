@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { useAuth } from './AuthContext';
 import { CHARACTERS, BIBLE_BOOKS } from '../data/collectibles';
-import { checkProStatus, subscribeToCustomerInfo } from '../utils/purchases';
+import { checkProStatus, subscribeToCustomerInfo, identifyPurchasesUser, clearPurchasesUser } from '../utils/purchases';
 
 const PROGRESS_KEY = 'bible_trivia_progress';
 
@@ -68,6 +68,7 @@ const DEFAULT_PROGRESS = {
     letters: 0,
     revelation: 0,
   },
+  missedQuestions: {}, // Tracking questions for review
 };
 
 export const ERA_ORDER = [
@@ -257,6 +258,9 @@ export function ProgressProvider({ children }) {
   useEffect(() => {
     if (user && !loading && isFirebaseConfigured) {
       syncWithCloud();
+      identifyPurchasesUser(user.uid);
+    } else if (!user && !loading) {
+      clearPurchasesUser();
     }
   }, [user, loading]);
 
@@ -436,6 +440,15 @@ export function ProgressProvider({ children }) {
       .filter((entry, idx, arr) => arr.findIndex((x) => x.id === entry.id) === idx)
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
+    const combinedMissed = { ...(safeCloud.missedQuestions || {}), ...(safeLocal.missedQuestions || {}) };
+    Object.keys(combinedMissed).forEach(key => {
+      combinedMissed[key] = Math.max(
+        (safeLocal.missedQuestions || {})[key] || 0,
+        (safeCloud.missedQuestions || {})[key] || 0
+      );
+    });
+    merged.missedQuestions = combinedMissed;
+
     return checkUnlocks(merged);
   };
 
@@ -454,124 +467,124 @@ export function ProgressProvider({ children }) {
     }
   };
 
-  const updateProgress = async (difficulty, score, total, questionsBatch, didYouKnowKey = null) => {
-    const pct = Math.round((score / total) * 100);
-    let updated = { ...progress };
-
-    const key = `${difficulty}HighScore`;
-    const completedKey = `${difficulty}Completed`;
-    
-    if (pct > (updated[key] || 0)) {
-      updated[key] = pct;
-    }
-    updated[completedKey] = (updated[completedKey] || 0) + 1;
-    updated.totalQuestionsAnswered = (updated.totalQuestionsAnswered || 0) + total;
-    updated.coins = (updated.coins || 0) + 10;
-
-    updated.totalCorrect = (updated.totalCorrect || 0) + score;
-    updated.lastPlayed = new Date().toISOString();
-    if (score === total && total > 0) {
-      updated.perfectScores = (updated.perfectScores || 0) + 1;
-    }
-    if (difficulty === 'easy') {
-      updated.easyCorrect = (updated.easyCorrect || 0) + score;
-      updated.easyTotal = (updated.easyTotal || 0) + total;
-    } else if (difficulty === 'medium') {
-      updated.mediumCorrect = (updated.mediumCorrect || 0) + score;
-      updated.mediumTotal = (updated.mediumTotal || 0) + total;
-    } else if (difficulty === 'hard') {
-      updated.hardCorrect = (updated.hardCorrect || 0) + score;
-      updated.hardTotal = (updated.hardTotal || 0) + total;
-    } else if (difficulty === 'expert') {
-      updated.expertCorrect = (updated.expertCorrect || 0) + score;
-      updated.expertTotal = (updated.expertTotal || 0) + total;
-    }
+  const _applyBatchUpdates = (prev, questionsBatch) => {
+    let coins = 0;
+    const eraProgress = { ...(prev.eraProgress || {}) };
+    const bookProgress = { ...(prev.bookProgress || {}) };
+    const missedQuestions = { ...(prev.missedQuestions || {}) };
 
     if (questionsBatch) {
       questionsBatch.forEach(q => {
         if (q.era && q.isCorrect) {
-          const prevProgress = updated.eraProgress[q.era] || 0;
-          updated.eraProgress[q.era] = prevProgress + 1;
-
-          if (updated.eraProgress[q.era] === MASTERY_TIERS.SILVER) {
-            updated.coins += 100;
-          } else if (updated.eraProgress[q.era] === MASTERY_TIERS.GOLD) {
-            updated.coins += 500;
-          }
+          eraProgress[q.era] = (eraProgress[q.era] || 0) + 1;
+          if (eraProgress[q.era] === MASTERY_TIERS.SILVER) coins += 100;
+          if (eraProgress[q.era] === MASTERY_TIERS.GOLD) coins += 500;
         }
         if (q.bibleBook && q.isCorrect) {
-          updated.bookProgress[q.bibleBook] = (updated.bookProgress[q.bibleBook] || 0) + 1;
+          bookProgress[q.bibleBook] = (bookProgress[q.bibleBook] || 0) + 1;
+        }
+        if (!q.isCorrect) {
+          missedQuestions[q.question] = (missedQuestions[q.question] || 0) + 1;
         }
       });
     }
 
-    updated.seenDidYouKnow = appendSeenEntry(updated.seenDidYouKnow, didYouKnowKey);
+    return { coins, eraProgress, bookProgress, missedQuestions };
+  };
 
-    updated = checkUnlocks(updated);
-    setProgress(updated);
-    await saveProgress(updated);
-    return updated;
+  const updateProgress = async (difficulty, score, total, questionsBatch, didYouKnowKey = null) => {
+    const pct = Math.round((score / total) * 100);
+
+    setProgress((prev) => {
+      let updated = { ...prev };
+      const { coins: bonusCoins, eraProgress, bookProgress, missedQuestions } = _applyBatchUpdates(prev, questionsBatch);
+
+      const key = `${difficulty}HighScore`;
+      const completedKey = `${difficulty}Completed`;
+
+      if (pct > (updated[key] || 0)) {
+        updated[key] = pct;
+      }
+      updated[completedKey] = (updated[completedKey] || 0) + 1;
+      updated.totalQuestionsAnswered = (updated.totalQuestionsAnswered || 0) + total;
+      updated.coins = (updated.coins || 0) + 10 + bonusCoins;
+      updated.totalCorrect = (updated.totalCorrect || 0) + score;
+      updated.lastPlayed = new Date().toISOString();
+      updated.eraProgress = eraProgress;
+      updated.bookProgress = bookProgress;
+      updated.missedQuestions = missedQuestions;
+
+      if (score === total && total > 0) {
+        updated.perfectScores = (updated.perfectScores || 0) + 1;
+      }
+
+      if (difficulty === 'easy') {
+        updated.easyCorrect = (updated.easyCorrect || 0) + score;
+        updated.easyTotal = (updated.easyTotal || 0) + total;
+      } else if (difficulty === 'medium') {
+        updated.mediumCorrect = (updated.mediumCorrect || 0) + score;
+        updated.mediumTotal = (updated.mediumTotal || 0) + total;
+      } else if (difficulty === 'hard') {
+        updated.hardCorrect = (updated.hardCorrect || 0) + score;
+        updated.hardTotal = (updated.hardTotal || 0) + total;
+      } else if (difficulty === 'expert') {
+        updated.expertCorrect = (updated.expertCorrect || 0) + score;
+        updated.expertTotal = (updated.expertTotal || 0) + total;
+      }
+
+      updated.seenDidYouKnow = appendSeenEntry(updated.seenDidYouKnow, didYouKnowKey);
+      updated = checkUnlocks(updated);
+      saveProgress(updated);
+      return updated;
+    });
   };
 
   const completeDailyChallenge = async (score, total, questionsBatch, questionKeys = [], didYouKnowKey = null) => {
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-    let updated = { ...progress };
+    setProgress((prev) => {
+      let updated = { ...prev };
+      const { coins: bonusCoins, eraProgress, bookProgress, missedQuestions } = _applyBatchUpdates(prev, questionsBatch);
 
-    if (updated.lastCompletionDate === yesterday) {
-      updated.currentStreak += 1;
-    } else if (updated.lastCompletionDate !== today) {
-      updated.currentStreak = 1;
-    }
+      if (updated.lastCompletionDate === yesterday) {
+        updated.currentStreak += 1;
+      } else if (updated.lastCompletionDate !== today) {
+        updated.currentStreak = 1;
+      }
 
-    updated.highestStreak = Math.max(updated.highestStreak, updated.currentStreak);
-    updated.lastCompletionDate = today;
-    updated.dailyChallengeCompleted = true;
-    updated.coins += 50;
-    updated.dailyChallengesCompleted = (updated.dailyChallengesCompleted || 0) + 1;
+      updated.highestStreak = Math.max(updated.highestStreak, updated.currentStreak);
+      updated.lastCompletionDate = today;
+      updated.dailyChallengeCompleted = true;
+      updated.coins = (updated.coins || 0) + 50 + bonusCoins;
+      updated.dailyChallengesCompleted = (updated.dailyChallengesCompleted || 0) + 1;
 
-    updated.totalQuestionsAnswered = (updated.totalQuestionsAnswered || 0) + total;
-    updated.totalCorrect = (updated.totalCorrect || 0) + score;
-    updated.lastPlayed = new Date().toISOString();
-    if (score === total && total > 0) {
-      updated.perfectScores = (updated.perfectScores || 0) + 1;
-    }
+      updated.totalQuestionsAnswered = (updated.totalQuestionsAnswered || 0) + total;
+      updated.totalCorrect = (updated.totalCorrect || 0) + score;
+      updated.lastPlayed = new Date().toISOString();
+      updated.eraProgress = eraProgress;
+      updated.bookProgress = bookProgress;
+      updated.missedQuestions = missedQuestions;
 
-    if (questionKeys.length > 0) {
-      const todayISO = new Date().toISOString();
-      const seenCutoff = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
-      const newEntries = questionKeys.map(key => ({ key, date: todayISO }));
-      updated.seenDailyQuestions = [
-        ...newEntries,
-        ...(updated.seenDailyQuestions || []).filter(e => e.date >= seenCutoff),
-      ];
-    }
+      if (score === total && total > 0) {
+        updated.perfectScores = (updated.perfectScores || 0) + 1;
+      }
 
-    if (questionsBatch) {
-      questionsBatch.forEach(q => {
-        if (q.era && q.isCorrect) {
-          const prevProgress = updated.eraProgress[q.era] || 0;
-          updated.eraProgress[q.era] = prevProgress + 1;
+      if (questionKeys.length > 0) {
+        const todayISO = new Date().toISOString();
+        const seenCutoff = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
+        const newEntries = questionKeys.map(key => ({ key, date: todayISO }));
+        updated.seenDailyQuestions = [
+          ...newEntries,
+          ...(updated.seenDailyQuestions || []).filter(e => e.date >= seenCutoff),
+        ];
+      }
 
-          if (updated.eraProgress[q.era] === MASTERY_TIERS.SILVER) {
-            updated.coins += 100;
-          } else if (updated.eraProgress[q.era] === MASTERY_TIERS.GOLD) {
-            updated.coins += 500;
-          }
-        }
-        if (q.bibleBook && q.isCorrect) {
-          updated.bookProgress[q.bibleBook] = (updated.bookProgress[q.bibleBook] || 0) + 1;
-        }
-      });
-    }
-
-    updated.seenDidYouKnow = appendSeenEntry(updated.seenDidYouKnow, didYouKnowKey);
-
-    updated = checkUnlocks(updated);
-    setProgress(updated);
-    await saveProgress(updated);
-    return updated;
+      updated.seenDidYouKnow = appendSeenEntry(updated.seenDidYouKnow, didYouKnowKey);
+      updated = checkUnlocks(updated);
+      saveProgress(updated);
+      return updated;
+    });
   };
 
   const setKnowledgeLevel = async (level) => {
@@ -589,15 +602,19 @@ export function ProgressProvider({ children }) {
   };
 
   const earnCoins = async (amount) => {
-    const updated = { ...progress, coins: (progress.coins || 0) + amount };
-    setProgress(updated);
-    await saveProgress(updated);
+    setProgress((prev) => {
+      const updated = { ...prev, coins: (prev.coins || 0) + amount };
+      saveProgress(updated);
+      return updated;
+    });
   };
 
   const setProStatus = async (isPro) => {
-    const updated = { ...progress, isPro };
-    setProgress(updated);
-    await saveProgress(updated);
+    setProgress((prev) => {
+      const updated = { ...prev, isPro };
+      saveProgress(updated);
+      return updated;
+    });
   };
 
   const addCoins = async (amount) => {
@@ -654,6 +671,20 @@ export function ProgressProvider({ children }) {
     return entry;
   };
 
+  const claimDailyReward = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    if (progress.lastDailyReward === today) return false;
+
+    const updated = {
+      ...progress,
+      coins: (progress.coins || 0) + 50,
+      lastDailyReward: today,
+    };
+    setProgress(updated);
+    await saveProgress(updated);
+    return true;
+  };
+
   return (
     <ProgressContext.Provider value={{
       progress,
@@ -669,6 +700,7 @@ export function ProgressProvider({ children }) {
       getDifficultyInfo,
       getStreakMilestone,
       saveReflection,
+      claimDailyReward,
     }}>
       {children}
     </ProgressContext.Provider>

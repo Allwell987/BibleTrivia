@@ -5,7 +5,7 @@ module.exports = {
     './jest.setup.js'
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|expo|@expo|expo-av|@react-navigation|react-native-screens|react-native-safe-area-context)/)',
+    'node_modules/(?!(react-native|@react-native|expo|@expo|expo-av|@react-navigation|react-native-screens|react-native-safe-area-context|expo-apple-authentication|expo-auth-session)/)',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [

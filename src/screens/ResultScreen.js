@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { saveScore } from '../utils/storage';
 import { shareResults } from '../utils/share';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 import { showRewardedAd, isAdsAvailable } from '../utils/ads';
 import { trackEvent } from '../utils/analytics';
@@ -26,6 +27,7 @@ function getGrade(score, total, colors) {
 export default function ResultScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
+  const { user } = useAuth();
   const reducedMotion = useReducedMotion();
   const {
     score = 0,
@@ -128,6 +130,7 @@ export default function ResultScreen({ route, navigation }) {
         score, total, difficulty,
         timeLeft: totalTime,
         date: new Date().toLocaleDateString(),
+        userId: user?.uid,
       });
       setSavedRank(rank);
       setSaved(true);

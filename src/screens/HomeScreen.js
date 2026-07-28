@@ -12,16 +12,16 @@ import useReducedMotion from '../hooks/useReducedMotion';
 const { width } = Dimensions.get('window');
 
 const DIFFICULTIES = [
-  { key: 'easy', label: 'Easy', subtitle: 'Basic Bible knowledge', color: '#4CAF82', lightColor: '#E8F5E9' },
-  { key: 'medium', label: 'Medium', subtitle: 'Some study required', color: '#E6A817', lightColor: '#FFF8E1' },
-  { key: 'hard', label: 'Hard', subtitle: 'Deep scripture knowledge', color: '#D95F4B', lightColor: '#FFEBEE' },
-  { key: 'expert', label: 'Expert', subtitle: 'Master biblical scholar', color: '#9B59B6', lightColor: '#F3E5F5' },
+  { key: 'easy', label: 'Easy', subtitle: 'Basic Bible knowledge', color: '#4CAF82', lightColor: '#E8F5E9', seconds: 15 },
+  { key: 'medium', label: 'Medium', subtitle: 'Some study required', color: '#E6A817', lightColor: '#FFF8E1', seconds: 15 },
+  { key: 'hard', label: 'Hard', subtitle: 'Deep scripture knowledge', color: '#D95F4B', lightColor: '#FFEBEE', seconds: 20 },
+  { key: 'expert', label: 'Expert', subtitle: 'Master biblical scholar', color: '#9B59B6', lightColor: '#F3E5F5', seconds: 30 },
 ];
 
 export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
-  const { isUnlocked, progress, getStreakMilestone } = useProgress();
+  const { isUnlocked, progress, getStreakMilestone, claimDailyReward } = useProgress();
   const reducedMotion = useReducedMotion();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -102,6 +102,19 @@ export default function HomeScreen({ navigation }) {
       difficultyCardAnims.map((anim) => Animated.timing(anim, { toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }))
     ).start();
   }, [dailyAnim, difficultyCardAnims, fadeAnim, journeyAnim, reducedMotion, slideAnim]);
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    if (progress.lastDailyReward !== today) {
+      setTimeout(() => {
+        Alert.alert(
+          'Daily Reward! 🪙',
+          'Welcome back! You earned 50 coins for your daily visit.',
+          [{ text: 'Praise God!', onPress: () => claimDailyReward() }]
+        );
+      }, 1500);
+    }
+  }, []);
 
   const styles = createStyles(colors);
 
@@ -227,7 +240,11 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={styles.snapshotCard}>
+        <TouchableOpacity
+          style={styles.snapshotCard}
+          onPress={() => navigation.navigate('Statistics')}
+          activeOpacity={0.7}
+        >
           <Text style={styles.snapshotTitle}>Knowledge Profile: <Text style={{ color: colors.primary }}>{progress.knowledgeLevel}</Text></Text>
           <View style={styles.snapshotRow}>
             <View style={styles.snapshotMetric}>
@@ -243,7 +260,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.snapshotLabel}>Streak</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.divider}>
           <View style={styles.divLine} />

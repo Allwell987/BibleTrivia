@@ -10,11 +10,11 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { ProgressProvider } from './src/context/ProgressContext';
 import { AuthProvider } from './src/context/AuthContext';
 import ErrorBoundary from './src/components/ErrorBoundary';
-import { loadSounds, unloadSounds } from './src/utils/sounds';
+import { loadSounds, unloadSounds, setSoundsEnabled } from './src/utils/sounds';
 import { loadSettings } from './src/utils/storage';
 import { setHapticsEnabled } from './src/utils/haptics';
 import { trackScreenView } from './src/utils/analytics';
-import { initializePurchases } from './src/utils/purchases';
+import { initializePurchases, identifyPurchasesUser } from './src/utils/purchases';
 import { initAds } from './src/utils/ads';
 import { logStartupConfigHealth } from './src/utils/configHealth';
 
@@ -94,6 +94,7 @@ export default function App() {
           initializePurchases().catch(e => console.warn('Failed to initialize purchases:', e)),
           loadSettings().then(settings => {
             setHapticsEnabled(settings.hapticEnabled);
+            setSoundsEnabled(settings.soundEnabled);
           })
         ]);
         logStartupConfigHealth();
