@@ -227,7 +227,7 @@ console.log('Current coins:', progress.coins);
 ### Invalid Product
 ```javascript
 // Modify productId to non-existent product
-const result = await purchaseCoinPackage('invalid.product.id');
+const result = await purchaseProduct('invalid.product.id');
 // Should error with "Product not found"
 ```
 
@@ -256,7 +256,7 @@ console.timeEnd('shop-load');
 ```javascript
 // Measure time to processed purchased
 console.time('purchase');
-const result = await purchaseCoinPackage(productId);
+const result = await purchaseProduct(productId);
 // Time should be < 3 seconds
 
 console.timeEnd('purchase');
@@ -269,7 +269,7 @@ console.timeEnd('purchase');
 // In src/utils/purchases.js
 const DEBUG = true;
 
-export async function purchaseCoinPackage(productId) {
+export async function purchaseProduct(productId) {
   if (DEBUG) console.log('🛒 Attempting purchase:', productId);
   try {
     const result = await requestPurchase({ sku: productId });

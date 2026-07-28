@@ -32,6 +32,7 @@ import CustomQuizScreen from './src/screens/CustomQuizScreen';
 import JourneyScreen from './src/screens/JourneyScreen';
 import CollectionScreen from './src/screens/CollectionScreen';
 import ReflectionsScreen from './src/screens/ReflectionsScreen';
+import AnagramScreen from './src/screens/AnagramScreen';
 import { isOnboarded } from './src/utils/storage';
 
 const Stack = createNativeStackNavigator();
@@ -75,6 +76,7 @@ function AppNavigator() {
       <Stack.Screen name="Challenge" component={ChallengeScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="Shop" component={ShopScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="CustomQuiz" component={CustomQuizScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Anagram" component={AnagramScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }
@@ -88,18 +90,18 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        await Promise.all([
-          loadSounds(),
+        await Promise.allSettled([
+          loadSounds().catch(e => console.warn('Failed to load sounds:', e)),
           initAds(),
           initializePurchases().catch(e => console.warn('Failed to initialize purchases:', e)),
           loadSettings().then(settings => {
             setHapticsEnabled(settings.hapticEnabled);
             setSoundsEnabled(settings.soundEnabled);
-          })
+          }).catch(e => console.warn('Failed to load settings:', e))
         ]);
         logStartupConfigHealth();
       } catch (e) {
-        console.warn(e);
+        console.error('Critical startup error:', e);
       } finally {
         setAppIsReady(true);
       }

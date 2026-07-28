@@ -7,8 +7,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
 import {
@@ -139,7 +139,7 @@ export default function ShopScreen({ navigation }) {
       cleanup();
 
       if (success) {
-        const rewardAmount = 50;
+        const rewardAmount = 25;
         await addCoins(rewardAmount);
         trackEvent('rewarded_ad_complete', {
           reward_amount: rewardAmount,
@@ -302,7 +302,7 @@ export default function ShopScreen({ navigation }) {
             >
               <View style={styles.packageHeader}>
                 <View>
-                  <Text style={[styles.packageCoins, { color: '#4CAF50' }]}>50</Text>
+                  <Text style={[styles.packageCoins, { color: '#4CAF50' }]}>25</Text>
                   <Text style={[styles.packageLabel, { color: colors.textSecondary }]}>Coins</Text>
                 </View>
                 <View style={[styles.bonusBadge, { backgroundColor: '#4CAF50' }]}>

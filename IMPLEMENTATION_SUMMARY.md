@@ -100,7 +100,7 @@ Perfect for different user types:
 
 ### Step 1: Install Library
 ```bash
-npm install react-native-iap
+npm install react-native-purchases
 ```
 
 ### Step 2: Configure iOS
@@ -120,7 +120,7 @@ npm install react-native-iap
   "expo": {
     "plugins": [
       [
-        "react-native-iap",
+        "react-native-purchases",
         {
           "skuAndroidList": ["com.iguruapp.bibletrivia.coins_500", ...],
           "skuIosList": ["com.iguruapp.bibletrivia.coins_500", ...]
@@ -240,7 +240,7 @@ Shows confirmation
 
 1. **Install dependency:**
    ```bash
-   npm install react-native-iap
+   npm install react-native-purchases
    ```
 
 2. **Read setup guide:**

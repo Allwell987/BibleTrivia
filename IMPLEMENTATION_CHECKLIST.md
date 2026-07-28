@@ -5,7 +5,7 @@ Use this checklist to track your progress implementing the coin purchase system.
 ## Phase 1: Installation & Setup 🔧
 
 ### Dependencies
-- [x] Run `npm install react-native-iap`
+- [x] Run `npm install react-native-purchases`
 - [x] Run `npm install` to ensure all dependencies updated
 - [x] Verify no peer dependency warnings
 
@@ -167,7 +167,7 @@ Build notes (Mar 31, 2026):
   "expo": {
     "plugins": [
       [
-        "react-native-iap",
+        "react-native-purchases",
         {
           "skuAndroidList": [
             "com.iguruapp.bibletrivia.coins_250",
@@ -434,7 +434,7 @@ Once completed, mark final checkboxes:
 **Command Cheatsheet:**
 ```bash
 # Install dependencies
-npm install react-native-iap
+npm install react-native-purchases
 
 # Rebuild for plugins
 expo prebuild --clean

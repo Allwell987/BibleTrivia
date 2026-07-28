@@ -44,6 +44,7 @@ export default function QuizScreen({ route, navigation }) {
     seconds = 15,
     category = 'all',
     isDaily = false,
+    isReview = false,
     era = null,
     questionCount = null,
     timerEnabled = true,
@@ -52,7 +53,18 @@ export default function QuizScreen({ route, navigation }) {
 
   const [questions] = useState(() => {
     let pool = [];
-    if (era) {
+    if (isReview) {
+      const missedMap = progress.missedQuestions || {};
+      const allQ = [...QUESTIONS.easy, ...QUESTIONS.medium, ...QUESTIONS.hard, ...QUESTIONS.expert];
+      // Filter questions that were missed
+      pool = allQ.filter(q => missedMap[q.question] > 0);
+
+      // If we don't have enough missed questions, add some from current level
+      if (pool.length < 5) {
+        const difficultyPool = QUESTIONS[difficulty] || QUESTIONS.easy;
+        pool = [...pool, ...shuffleArray(difficultyPool).slice(0, 5)];
+      }
+    } else if (era) {
       pool = [...QUESTIONS.easy, ...QUESTIONS.medium, ...QUESTIONS.hard].filter(q => q.era === era);
     } else if (difficulty === 'mixed' || difficulty === 'all') {
       pool = [...QUESTIONS.easy, ...QUESTIONS.medium, ...QUESTIONS.hard, ...QUESTIONS.expert];

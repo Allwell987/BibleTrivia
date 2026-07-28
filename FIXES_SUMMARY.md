@@ -38,7 +38,7 @@ return (
 
 ---
 
-### 2. **WARN: react-native-iap not available, falling back to mock mode**
+### 2. **WARN: react-native-purchases not available, falling back to mock mode**
 
 **File:** `src/utils/purchases.js`  
 **Problem:** Warning was logged at `console.warn()` severity even during normal development in Expo Go (where native IAP module is unavailable by design).  
@@ -51,9 +51,9 @@ return (
 **Code:**
 ```javascript
 try {
-  iapModule = require('react-native-iap');
+  Purchases = require('react-native-purchases');
 } catch (error) {
-  const message = 'react-native-iap not available; using mock purchases in this build.';
+  const message = 'react-native-purchases not available; using mock purchases in this build.';
   if (__DEV__) {
     console.log(message);  // 📋 Info in dev
   } else {

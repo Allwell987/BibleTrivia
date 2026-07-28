@@ -1,10 +1,10 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import AnswerOption from '../src/components/AnswerOption';
 import { ThemeProvider } from '../src/context/ThemeContext';
 
 describe('AnswerOption', () => {
-  it('renders option text and letter', () => {
+  it('renders option text and letter', async () => {
     const { getByText } = render(
       <ThemeProvider>
         <AnswerOption
@@ -17,7 +17,10 @@ describe('AnswerOption', () => {
         />
       </ThemeProvider>
     );
-    expect(getByText('Genesis')).toBeTruthy();
-    expect(getByText('A')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(getByText('Genesis')).toBeTruthy();
+      expect(getByText('A')).toBeTruthy();
+    });
   });
 });

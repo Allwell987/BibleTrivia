@@ -1,109 +1,219 @@
+export const ANAGRAM_CATEGORIES = {
+  BOOKS: 'Books of the Bible',
+  PEOPLE: 'Biblical Figures',
+  PLACES: 'Holy Places',
+  CONCEPTS: 'Theological Concepts',
+  EVENTS: 'Biblical Events',
+  PARABLES: 'Parables & Teachings',
+  MIRACLES: 'Miracles of Jesus',
+  FLORA_FAUNA: 'Nature & Animals',
+  OBJECTS: 'Biblical Objects',
+  WOMEN: 'Women of the Bible',
+  ARMOR_FRUIT: 'Armor & Fruit of Spirit',
+};
+
 export const ANAGRAMS = [
-  {
-    id: '1',
-    word: 'EXODUS',
-    scrambled: 'USDEOX',
-    hint: 'The second book of the Bible, detailing the departure of the Israelites from Egypt.',
-    difficulty: 'easy'
-  },
-  {
-    id: '2',
-    word: 'GENESIS',
-    scrambled: 'SSENEIG',
-    hint: 'The first book of the Bible, meaning "beginning" or "origin".',
-    difficulty: 'easy'
-  },
-  {
-    id: '3',
-    word: 'ABRAHAM',
-    scrambled: 'MAHARAB',
-    hint: 'The patriarch called by God to leave his home for a new land, promised to be the father of many nations.',
-    difficulty: 'easy'
-  },
-  {
-    id: '4',
-    word: 'GOLIATH',
-    scrambled: 'HTAILOG',
-    hint: 'The Philistine giant defeated by young David with a sling and a stone.',
-    difficulty: 'easy'
-  },
-  {
-    id: '5',
-    word: 'SOLOMON',
-    scrambled: 'NOMOLOS',
-    hint: 'The king known for his great wisdom and for building the first Temple in Jerusalem.',
-    difficulty: 'medium'
-  },
-  {
-    id: '6',
-    word: 'SAMSON',
-    scrambled: 'NOSMAS',
-    hint: 'The judge known for his immense strength, which was tied to his hair.',
-    difficulty: 'easy'
-  },
-  {
-    id: '7',
-    word: 'BETHLEHEM',
-    scrambled: 'MEHELHTEB',
-    hint: 'The town where Jesus was born, also known as the City of David.',
-    difficulty: 'medium'
-  },
-  {
-    id: '8',
-    word: 'NAZARETH',
-    scrambled: 'HTERAZAN',
-    hint: 'The town where Jesus grew up.',
-    difficulty: 'medium'
-  },
-  {
-    id: '9',
-    word: 'PENTECOST',
-    scrambled: 'TSOCETNEP',
-    hint: 'The day the Holy Spirit descended upon the Apostles, often called the birthday of the Church.',
-    difficulty: 'hard'
-  },
-  {
-    id: '10',
-    word: 'JERUSALEM',
-    scrambled: 'MEALASUREJ',
-    hint: 'The holy city where the Temple was located and where Jesus was crucified and rose again.',
-    difficulty: 'medium'
-  },
-  {
-    id: '11',
-    word: 'PARABLE',
-    scrambled: 'ELBARAP',
-    hint: 'A simple story used to illustrate a moral or spiritual lesson, as told by Jesus.',
-    difficulty: 'easy'
-  },
-  {
-    id: '12',
-    word: 'COVENANT',
-    scrambled: 'TNANEVOC',
-    hint: 'A solemn agreement between God and His people.',
-    difficulty: 'hard'
-  },
-  {
-    id: '13',
-    word: 'PHARISEE',
-    scrambled: 'EESIRAHP',
-    hint: 'A member of an ancient Jewish sect known for strict observance of traditional and written law.',
-    difficulty: 'hard'
-  },
-  {
-    id: '14',
-    word: 'HOSANNA',
-    scrambled: 'ANNAOSOH',
-    hint: 'A shout of praise or adoration, used by the crowds when Jesus entered Jerusalem.',
-    difficulty: 'medium'
-  },
-  {
-    id: '15',
-    word: 'MESSIAH',
-    scrambled: 'HAISSEM',
-    hint: 'The promised deliverer of the Jewish nation prophesied in the Hebrew Bible.',
-    difficulty: 'medium'
-  }
+  // --- BOOKS (30) ---
+  { id: 'b1', word: 'GENESIS', hint: 'The beginning of all things and the story of creation.', reference: 'Genesis 1:1', difficulty: 'easy', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b2', word: 'EXODUS', hint: 'The Great Departure of the Israelites from Egyptian bondage.', reference: 'Exodus 12:41', difficulty: 'easy', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b3', word: 'LEVITICUS', hint: 'A manual for priests detailing laws of holiness and sacrifice.', reference: 'Leviticus 1:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b4', word: 'NUMBERS', hint: 'Named for the census of the Israelites in the wilderness.', reference: 'Numbers 1:1', difficulty: 'easy', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b5', word: 'DEUTERONOMY', hint: 'The second giving of the Law before entering the Promised Land.', reference: 'Deuteronomy 1:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b6', word: 'JOSHUA', hint: 'The leader who succeeded Moses and led the conquest of Canaan.', reference: 'Joshua 1:1', difficulty: 'easy', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b7', word: 'JUDGES', hint: 'The history of Israel\'s leaders before the rise of kings.', reference: 'Judges 2:16', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b8', word: 'CHRONICLES', hint: 'A genealogical and historical record of Judah\'s kings.', reference: '1 Chronicles 1:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b9', word: 'NEHEMIAH', hint: 'The cupbearer to the king who rebuilt the walls of Jerusalem.', reference: 'Nehemiah 1:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b10', word: 'ECCLESIASTES', hint: 'A philosophical search for meaning "under the sun".', reference: 'Ecclesiastes 1:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b11', word: 'ISAIAH', hint: 'A major prophet who spoke extensively of the coming Messiah.', reference: 'Isaiah 9:6', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b12', word: 'JEREMIAH', hint: 'Known as the "weeping prophet" who witnessed Jerusalem\'s fall.', reference: 'Jeremiah 1:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b13', word: 'LAMENTATIONS', hint: 'Five poetic dirges mourning the destruction of Jerusalem.', reference: 'Lamentations 1:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b14', word: 'EZEKIEL', hint: 'A prophet in exile known for complex visions and symbols.', reference: 'Ezekiel 1:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b15', word: 'MALACHI', hint: 'The final book of the Old Testament, calling for repentance.', reference: 'Malachi 1:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b16', word: 'GALATIANS', hint: 'Paul\'s letter defending the gospel of grace against legalism.', reference: 'Galatians 5:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b17', word: 'EPHESIANS', hint: 'A letter focusing on the mystery of the church and spiritual armor.', reference: 'Ephesians 6:11', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b18', word: 'PHILIPPIANS', hint: 'A joyful letter written from prison emphasizing contentment.', reference: 'Philippians 4:4', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b19', word: 'COLOSSIANS', hint: 'Emphasizes the preeminence and sufficiency of Christ.', reference: 'Colossians 1:18', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b20', word: 'PHILEMON', hint: 'A short personal letter regarding a runaway slave.', reference: 'Philemon 1:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b21', word: 'HABAKKUK', hint: 'A prophet who wrestled with God\'s silence in the face of evil.', reference: 'Habakkuk 1:2', difficulty: 'expert', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b22', word: 'ZEPHANIAH', hint: 'Prophesied about the "Day of the Lord" and a remnant of Israel.', reference: 'Zephaniah 1:1', difficulty: 'expert', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b23', word: 'OBADIAH', hint: 'The shortest book in the Old Testament, a prophecy against Edom.', reference: 'Obadiah 1:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b24', word: 'HAGGAI', hint: 'Encouraged the returned exiles to rebuild the Temple of the Lord.', reference: 'Haggai 1:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b25', word: 'ZECHARIAH', hint: 'Visions of the restoration of Jerusalem and the coming King.', reference: 'Zechariah 9:9', difficulty: 'hard', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b26', word: 'THESSALONIANS', hint: 'Letters addressing concerns about the second coming of Christ.', reference: '1 Thessalonians 4:16', difficulty: 'expert', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b27', word: 'TIMOTHY', hint: 'Pastoral letters from Paul to his "true son in the faith".', reference: '1 Timothy 1:2', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b28', word: 'TITUS', hint: 'Instructions on appointing elders and living godly lives in Crete.', reference: 'Titus 1:5', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b29', word: 'HEBREWS', hint: 'A letter demonstrating the superiority of Christ over old systems.', reference: 'Hebrews 1:3', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+  { id: 'b30', word: 'REVELATION', hint: 'The final, prophetic book of the Bible detailing the end times.', reference: 'Revelation 21:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.BOOKS },
+
+  // --- PEOPLE (30) ---
+  { id: 'p1', word: 'METHUSELAH', hint: 'Recorded as the longest-living human in history.', reference: 'Genesis 5:27', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p2', word: 'MELCHIZEDEK', hint: 'The mysterious King of Righteousness and priest of Salem.', reference: 'Hebrews 7:1', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p3', word: 'NEBUCHADNEZZAR', hint: 'The powerful Babylonian king who experienced pride and madness.', reference: 'Daniel 4:33', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p4', word: 'JEHOSHAPHAT', hint: 'A king of Judah who sought the Lord with all his heart.', reference: '2 Chronicles 20:3', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p5', word: 'BARTHOLOMEW', hint: 'One of the Twelve Apostles, often linked to Nathanael.', reference: 'John 1:45', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p6', word: 'ZACCHAEUS', hint: 'The short tax collector who climbed a tree to see Jesus.', reference: 'Luke 19:4', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p7', word: 'NICODEMUS', hint: 'A Pharisee who visited Jesus by night to discuss being born again.', reference: 'John 3:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p8', word: 'MEPHIBOSHETH', hint: 'The lame son of Jonathan to whom David showed great kindness.', reference: '2 Samuel 9:6', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p9', word: 'BARNABAS', hint: 'Known as the "Son of Encouragement" and Paul\'s companion.', reference: 'Acts 4:36', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p10', word: 'CALEB', hint: 'One of the two faithful spies who believed God could take Canaan.', reference: 'Numbers 14:24', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p11', word: 'GABRIEL', hint: 'The archangel who brought news of the Messiah\'s birth.', reference: 'Luke 1:19', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p12', word: 'DEBORAH', hint: 'A prophetess and the only female judge mentioned in the Bible.', reference: 'Judges 4:4', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p13', word: 'ELIJAH', hint: 'The prophet who was taken to heaven in a whirlwind.', reference: '2 Kings 2:11', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p14', word: 'ELISHA', hint: 'The successor to Elijah who performed many miracles.', reference: '2 Kings 2:15', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p15', word: 'HEZEKIAH', hint: 'A righteous king of Judah who survived the Assyrian siege.', reference: '2 Kings 18:5', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p16', word: 'ABEDNEGO', hint: 'One of the three companions of Daniel thrown into the furnace.', reference: 'Daniel 3:23', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p17', word: 'BELSHAZZAR', hint: 'The king who saw the handwriting on the wall during a feast.', reference: 'Daniel 5:1', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p18', word: 'CORNELIUS', hint: 'The Roman centurion whose household was the first Gentile convert.', reference: 'Acts 10:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p19', word: 'EUTYCHUS', hint: 'The young man who fell from a window while Paul was preaching.', reference: 'Acts 20:9', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p20', word: 'GIDEON', hint: 'A judge who defeated the Midianites with only 300 men.', reference: 'Judges 7:7', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p21', word: 'ONESIMUS', hint: 'The runaway slave whom Paul sent back to Philemon.', reference: 'Philemon 1:10', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p22', word: 'POTIPHAR', hint: 'The Egyptian officer who bought Joseph as a slave.', reference: 'Genesis 37:36', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p23', word: 'REHOBOAM', hint: 'The son of Solomon whose actions led to the split of Israel.', reference: '1 Kings 12:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p24', word: 'STEPHEN', hint: 'The first martyr of the early church, stoned for his faith.', reference: 'Acts 7:59', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p25', word: 'TIMOTHY', hint: 'A young leader and protégé of the apostle Paul.', reference: '2 Timothy 1:2', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p26', word: 'URIAH', hint: 'The husband of Bathsheba whom David sent to the front lines.', reference: '2 Samuel 11:15', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p27', word: 'ZERUBBABEL', hint: 'The governor who led the first group of exiles back to Judah.', reference: 'Ezra 3:2', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p28', word: 'ADONIJAH', hint: 'The son of David who tried to seize the throne before Solomon.', reference: '1 Kings 1:5', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p29', word: 'BOAZ', hint: 'The wealthy landowner and kinsman-redeemer of Ruth.', reference: 'Ruth 2:1', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PEOPLE },
+  { id: 'p30', word: 'MORDECAI', hint: 'Esther\'s cousin who saved the Jewish people from Haman.', reference: 'Esther 2:5', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PEOPLE },
+
+  // --- PLACES (20) ---
+  { id: 'l1', word: 'GARDEN OF EDEN', hint: 'The site of humanity\'s creation and the first sin.', reference: 'Genesis 2:15', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l2', word: 'BETHLEHEM', hint: 'The humble birthplace of the King of kings.', reference: 'Micah 5:2', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l3', word: 'JERUSALEM', hint: 'The city of peace and the dwelling place of the Temple.', reference: 'Psalm 122:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l4', word: 'NAZARETH', hint: 'The Galilean town where Jesus spent his childhood.', reference: 'Matthew 2:23', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l5', word: 'MOUNT SINAI', hint: 'The mountain where God revealed the Ten Commandments.', reference: 'Exodus 31:18', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l6', word: 'GOLGOTHA', hint: 'The site of the crucifixion, meaning "Place of the Skull".', reference: 'Matthew 27:33', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l7', word: 'GETHSEMANE', hint: 'The garden where Jesus prayed before his arrest.', reference: 'Matthew 26:36', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l8', word: 'CAESAREA', hint: 'A Roman port city where Cornelius the centurion lived.', reference: 'Acts 10:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l9', word: 'MOUNT CARMEL', hint: 'Where Elijah defeated the prophets of Baal.', reference: '1 Kings 18:20', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l10', word: 'JERICHO', hint: 'The city whose walls fell after the Israelites marched around them.', reference: 'Joshua 6:20', difficulty: 'easy', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l11', word: 'ANTIOCH', hint: 'The city where the followers of Jesus were first called Christians.', reference: 'Acts 11:26', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l12', word: 'CAPERNAUM', hint: 'The center of Jesus\' ministry in Galilee.', reference: 'Matthew 4:13', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l13', word: 'BETHANY', hint: 'The home of Mary, Martha, and Lazarus, near Jerusalem.', reference: 'John 11:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l14', word: 'DAMASCUS', hint: 'The city Saul was headed toward when he was converted.', reference: 'Acts 9:3', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l15', word: 'MOUNT OLIVET', hint: 'The location where Jesus ascended into heaven.', reference: 'Acts 1:12', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l16', word: 'NINEVEH', hint: 'The capital of Assyria to which Jonah was sent to preach.', reference: 'Jonah 1:2', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l17', word: 'BABYLON', hint: 'The city of exile for Judah and a symbol of worldly pride.', reference: 'Psalm 137:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l18', word: 'SODOM AND GOMORRAH', hint: 'Cities destroyed by God for their extreme wickedness.', reference: 'Genesis 19:24', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l19', word: 'MOUNT ARARAT', hint: 'The mountain where Noah\'s ark came to rest after the flood.', reference: 'Genesis 8:4', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PLACES },
+  { id: 'l20', word: 'PATMOS', hint: 'The island where John was exiled and received his revelation.', reference: 'Revelation 1:9', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PLACES },
+
+  // --- CONCEPTS (15) ---
+  { id: 'c1', word: 'SALVATION', hint: 'The deliverance from sin and its penalty through Christ.', reference: 'John 3:16', difficulty: 'medium', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c2', word: 'RIGHTEOUSNESS', hint: 'Being in right standing and moral alignment with God.', reference: 'Matthew 5:6', difficulty: 'hard', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c3', word: 'SANCTIFICATION', hint: 'The ongoing process of being set apart for God\'s use.', reference: '1 Peter 1:2', difficulty: 'expert', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c4', word: 'REDEMPTION', hint: 'The act of buying back or ransoming from slavery to sin.', reference: 'Colossians 1:14', difficulty: 'medium', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c5', word: 'JUSTIFICATION', hint: 'The legal act of God declaring a sinner to be righteous.', reference: 'Romans 5:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c6', word: 'GRACE', hint: 'Receiving God\'s favor when we deserve His judgment.', reference: 'Ephesians 2:8', difficulty: 'easy', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c7', word: 'MERCY', hint: 'Not receiving the punishment that we justly deserve.', reference: 'Titus 3:5', difficulty: 'easy', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c8', word: 'SOVEREIGNTY', hint: 'The absolute authority and rule of God over all creation.', reference: 'Psalm 103:19', difficulty: 'hard', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c9', word: 'REPENTANCE', hint: 'A sincere turning away from sin and toward God.', reference: 'Luke 13:3', difficulty: 'medium', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c10', word: 'OMNIPOTENCE', hint: 'The quality of having unlimited and universal power.', reference: 'Revelation 19:6', difficulty: 'expert', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c11', word: 'GLORIFICATION', hint: 'The final state of the believer, made perfect in heaven.', reference: 'Romans 8:30', difficulty: 'expert', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c12', word: 'PROPITIATION', hint: 'The turning away of God\'s wrath through the sacrifice of Christ.', reference: '1 John 2:2', difficulty: 'expert', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c13', word: 'ATONEMENT', hint: 'The reconciliation of God and mankind through Christ\'s death.', reference: 'Romans 5:11', difficulty: 'hard', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c14', word: 'ADOPTION', hint: 'The act of God bringing believers into His spiritual family.', reference: 'Galatians 4:5', difficulty: 'medium', category: ANAGRAM_CATEGORIES.CONCEPTS },
+  { id: 'c15', word: 'INTERCESSION', hint: 'Praying or petitioning on behalf of another.', reference: 'Romans 8:34', difficulty: 'hard', category: ANAGRAM_CATEGORIES.CONCEPTS },
+
+  // --- EVENTS (15) ---
+  { id: 'e1', word: 'RESURRECTION', hint: 'The victory of Jesus over death on the third day.', reference: '1 Corinthians 15:20', difficulty: 'hard', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e2', word: 'PENTECOST', hint: 'The outpouring of the Holy Spirit on the early church.', reference: 'Acts 2:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e3', word: 'TRANSFIGURATION', hint: 'The radiant manifestation of Christ\'s glory on the mountain.', reference: 'Luke 9:29', difficulty: 'expert', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e4', word: 'ASCENSION', hint: 'The physical return of Jesus to his Father in heaven.', reference: 'Acts 1:9', difficulty: 'medium', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e5', word: 'CRUCIFIXION', hint: 'The ultimate sacrifice of Christ on the cross for our sins.', reference: 'Philippians 2:8', difficulty: 'hard', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e6', word: 'PASSOVER', hint: 'A memorial of God sparing the firstborn of Israel in Egypt.', reference: 'Exodus 12:27', difficulty: 'medium', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e7', word: 'ANNUNCIATION', hint: 'The announcement by Gabriel to Mary that she would bear Jesus.', reference: 'Luke 1:31', difficulty: 'expert', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e8', word: 'THE FLOOD', hint: 'The judgment of God upon the earth in the days of Noah.', reference: 'Genesis 7:17', difficulty: 'easy', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e9', word: 'BABEL', hint: 'The event where God confused the languages of the people.', reference: 'Genesis 11:9', difficulty: 'easy', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e10', word: 'EXILE', hint: 'The period when the Jews were taken captive to Babylon.', reference: '2 Kings 24:14', difficulty: 'medium', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e11', word: 'THE LAST SUPPER', hint: 'The final meal Jesus shared with his disciples before his death.', reference: 'Luke 22:14', difficulty: 'hard', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e12', word: 'BAPTISM OF JESUS', hint: 'The event where the Holy Spirit descended on Jesus like a dove.', reference: 'Matthew 3:16', difficulty: 'expert', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e13', word: 'TOWER OF SILOAM', hint: 'An accident Jesus referenced to teach about repentance.', reference: 'Luke 13:4', difficulty: 'expert', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e14', word: 'TEMPTATION IN WILDERNESS', hint: 'The 40-day period where Jesus was tested by Satan.', reference: 'Matthew 4:1', difficulty: 'expert', category: ANAGRAM_CATEGORIES.EVENTS },
+  { id: 'e15', word: 'SERMON ON THE MOUNT', hint: 'The longest recorded teaching of Jesus in the Gospels.', reference: 'Matthew 5:1', difficulty: 'expert', category: ANAGRAM_CATEGORIES.EVENTS },
+
+  // --- PARABLES & TEACHINGS (10) ---
+  { id: 'pa1', word: 'PRODIGAL SON', hint: 'A story of a lost son\'s return and a father\'s grace.', reference: 'Luke 15:24', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa2', word: 'GOOD SAMARITAN', hint: 'A teaching on what it truly means to love one\'s neighbor.', reference: 'Luke 10:33', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa3', word: 'SOWER AND THE SEED', hint: 'A parable about the responsiveness of the human heart.', reference: 'Matthew 13:18', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa4', word: 'MUSTARD SEED', hint: 'A lesson on how small faith can grow into something great.', reference: 'Matthew 13:31', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa5', word: 'TEN VIRGINS', hint: 'A warning to be prepared and watchful for the Lord\'s return.', reference: 'Matthew 25:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa6', word: 'LOST SHEEP', hint: 'The rejoicing in heaven over one sinner who repents.', reference: 'Luke 15:7', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa7', word: 'HIDDEN TREASURE', hint: 'The immense value of the Kingdom of Heaven.', reference: 'Matthew 13:44', difficulty: 'medium', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa8', word: 'THE TALENTS', hint: 'The importance of being faithful with what God has given us.', reference: 'Matthew 25:14', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa9', word: 'UNFORGIVING SERVANT', hint: 'A lesson on showing the same mercy we have received.', reference: 'Matthew 18:23', difficulty: 'expert', category: ANAGRAM_CATEGORIES.PARABLES },
+  { id: 'pa10', word: 'WHEAT AND TARES', hint: 'A parable about the final judgment and the separation of people.', reference: 'Matthew 13:24', difficulty: 'hard', category: ANAGRAM_CATEGORIES.PARABLES },
+
+  // --- MIRACLES (10) ---
+  { id: 'm1', word: 'WATER INTO WINE', hint: 'The first sign performed by Jesus at a wedding in Cana.', reference: 'John 2:11', difficulty: 'hard', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm2', word: 'WALKING ON WATER', hint: 'A miracle demonstrating Christ\'s authority over nature.', reference: 'John 6:19', difficulty: 'hard', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm3', word: 'LAZARUS', hint: 'The friend of Jesus who was raised from the dead after four days.', reference: 'John 11:43', difficulty: 'medium', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm4', word: 'FEEDING THE FIVE THOUSAND', hint: 'A miraculous provision from five loaves and two fish.', reference: 'Matthew 14:21', difficulty: 'expert', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm5', word: 'HEALING THE BLIND', hint: 'Signs of the Messiah giving sight to those in darkness.', reference: 'John 9:7', difficulty: 'hard', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm6', word: 'CALMING THE STORM', hint: 'Jesus rebuked the wind and waves on the Sea of Galilee.', reference: 'Mark 4:39', difficulty: 'hard', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm7', word: 'COIN IN FISH MOUTH', hint: 'A miracle performed to pay the temple tax.', reference: 'Matthew 17:27', difficulty: 'expert', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm8', word: 'WITHERING FIG TREE', hint: 'A sign of judgment on a nation that bore no spiritual fruit.', reference: 'Matthew 21:19', difficulty: 'hard', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm9', word: 'TEN LEPERS', hint: 'Jesus healed ten men, but only one returned to give thanks.', reference: 'Luke 17:12', difficulty: 'medium', category: ANAGRAM_CATEGORIES.MIRACLES },
+  { id: 'm10', word: 'JAIRUS DAUGHTER', hint: 'Jesus raised this young girl from the dead, saying she was only sleeping.', reference: 'Mark 5:41', difficulty: 'expert', category: ANAGRAM_CATEGORIES.MIRACLES },
+
+  // --- NATURE & ANIMALS (10) ---
+  { id: 'n1', word: 'LEVIATHAN', hint: 'A formidable and mysterious sea creature mentioned in Job.', reference: 'Job 41:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n2', word: 'BEHEMOTH', hint: 'A mighty beast described as having bones like bronze.', reference: 'Job 40:15', difficulty: 'hard', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n3', word: 'CEDARS OF LEBANON', hint: 'Majestic trees often used as symbols of strength and beauty.', reference: 'Psalm 92:12', difficulty: 'expert', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n4', word: 'DOVE', hint: 'The bird that brought an olive branch back to Noah.', reference: 'Genesis 8:11', difficulty: 'easy', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n5', word: 'LOCUSTS', hint: 'Part of the plague sent upon Egypt to release Israel.', reference: 'Exodus 10:12', difficulty: 'medium', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n6', word: 'RAVEN', hint: 'The birds that God used to feed Elijah by the Brook Cherith.', reference: '1 Kings 17:6', difficulty: 'easy', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n7', word: 'LION OF JUDAH', hint: 'A symbolic name for Christ representing His power and kingship.', reference: 'Revelation 5:5', difficulty: 'medium', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n8', word: 'BALAAMS DONKEY', hint: 'The animal that God enabled to speak to rebuke a prophet.', reference: 'Numbers 22:28', difficulty: 'hard', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n9', word: 'LILIES OF THE FIELD', hint: 'A metaphor used by Jesus to teach about God\'s provision.', reference: 'Matthew 6:28', difficulty: 'hard', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+  { id: 'n10', word: 'OLIVE BRANCH', hint: 'A symbol of peace and the end of judgment after the flood.', reference: 'Genesis 8:11', difficulty: 'medium', category: ANAGRAM_CATEGORIES.FLORA_FAUNA },
+
+  // --- OBJECTS (15) ---
+  { id: 'o1', word: 'ARK OF THE COVENANT', hint: 'The sacred chest containing the tablets of the Law.', reference: 'Exodus 25:10', difficulty: 'expert', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o2', word: 'TABERNACLE', hint: 'The portable sanctuary for God\'s presence in the wilderness.', reference: 'Exodus 40:34', difficulty: 'hard', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o3', word: 'GOLDEN CALF', hint: 'The idol crafted by the Israelites at the foot of Sinai.', reference: 'Exodus 32:4', difficulty: 'hard', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o4', word: 'MANNA', hint: 'The "bread from heaven" provided to Israel each morning.', reference: 'Exodus 16:31', difficulty: 'easy', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o5', word: 'MANGER', hint: 'The humble feeding trough where the infant Jesus was laid.', reference: 'Luke 2:7', difficulty: 'easy', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o6', word: 'SCARLET THREAD', hint: 'The sign Rahab used to save her household in Jericho.', reference: 'Joshua 2:18', difficulty: 'hard', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o7', word: 'AARONS ROD', hint: 'The staff that budded to confirm God\'s chosen priesthood.', reference: 'Numbers 17:8', difficulty: 'medium', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o8', word: 'BRAZEN SERPENT', hint: 'The object Moses lifted up to heal the people from bites.', reference: 'Numbers 21:9', difficulty: 'hard', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o9', word: 'ALTAR OF INCENSE', hint: 'Where prayers were offered symbolically before the Lord.', reference: 'Exodus 30:1', difficulty: 'hard', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o10', word: 'SHEWEREAD', hint: 'The twelve loaves of bread kept in the Holy Place.', reference: 'Exodus 25:30', difficulty: 'expert', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o11', word: 'CROWN OF THORNS', hint: 'A mocking crown placed on Jesus\' head during His trial.', reference: 'Matthew 27:29', difficulty: 'hard', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o12', word: 'SEAMLESS ROBE', hint: 'The garment of Jesus for which the soldiers cast lots.', reference: 'John 19:23', difficulty: 'hard', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o13', word: 'URIM AND THUMMIM', hint: 'Sacred objects used by the High Priest to determine God\'s will.', reference: 'Exodus 28:30', difficulty: 'expert', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o14', word: 'GOLD FRANKINCENSE MYRRH', hint: 'The three gifts brought by the wise men to the infant Jesus.', reference: 'Matthew 2:11', difficulty: 'expert', category: ANAGRAM_CATEGORIES.OBJECTS },
+  { id: 'o15', word: 'JASPER AND SARDINE', hint: 'Stones used to describe the appearance of God on His throne.', reference: 'Revelation 4:3', difficulty: 'expert', category: ANAGRAM_CATEGORIES.OBJECTS },
+
+  // --- WOMEN (15) ---
+  { id: 'w1', word: 'MARY MAGDALENE', hint: 'The first person to see the risen Lord at the tomb.', reference: 'John 20:16', difficulty: 'hard', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w2', word: 'REBEKAH', hint: 'The wife of Isaac and mother of Jacob and Esau.', reference: 'Genesis 24:67', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w3', word: 'RACHEL', hint: 'The beloved wife of Jacob for whom he worked 14 years.', reference: 'Genesis 29:20', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w4', word: 'ELIZABETH', hint: 'The mother of John the Baptist and cousin of Mary.', reference: 'Luke 1:13', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w5', word: 'PRISCILLA', hint: 'A co-worker of Paul who instructed Apollos in the faith.', reference: 'Acts 18:26', difficulty: 'hard', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w6', word: 'LYDIA', hint: 'A seller of purple cloth and the first convert in Europe.', reference: 'Acts 16:14', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w7', word: 'JEZEBEL', hint: 'A wicked queen who persecuted the prophets of God.', reference: '1 Kings 19:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w8', word: 'RAHAB', hint: 'The woman of Jericho who hid the two Israelite spies.', reference: 'Joshua 2:1', difficulty: 'easy', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w9', word: 'ABIGAIL', hint: 'A wise woman who prevented David from taking vengeance.', reference: '1 Samuel 25:3', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w10', word: 'HULDAH', hint: 'A prophetess who confirmed the authenticity of the Law.', reference: '2 Kings 22:14', difficulty: 'expert', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w11', word: 'MIRIAM', hint: 'The sister of Moses who led the women in song and dance.', reference: 'Exodus 15:20', difficulty: 'easy', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w12', word: 'JOANNA', hint: 'The wife of Chuza who helped support Jesus\' ministry.', reference: 'Luke 8:3', difficulty: 'hard', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w13', word: 'DORCAS', hint: 'A woman known for her good works and helping the poor.', reference: 'Acts 9:36', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w14', word: 'PHOEBE', hint: 'A servant of the church in Cenchreae commended by Paul.', reference: 'Romans 16:1', difficulty: 'medium', category: ANAGRAM_CATEGORIES.WOMEN },
+  { id: 'w15', word: 'ATHALIAH', hint: 'A queen who seized the throne of Judah and killed her heirs.', reference: '2 Kings 11:1', difficulty: 'expert', category: ANAGRAM_CATEGORIES.WOMEN },
+
+  // --- ARMOR & FRUIT (10) ---
+  { id: 'af1', word: 'SHIELD OF FAITH', hint: 'Part of the spiritual armor used to extinguish fiery darts.', reference: 'Ephesians 6:16', difficulty: 'hard', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af2', word: 'HELMET OF SALVATION', hint: 'Armor that protects the mind of the believer.', reference: 'Ephesians 6:17', difficulty: 'hard', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af3', word: 'SWORD OF THE SPIRIT', hint: 'The only offensive weapon in the armor, the Word of God.', reference: 'Ephesians 6:17', difficulty: 'hard', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af4', word: 'BREASTPLATE OF RIGHTEOUSNESS', hint: 'Armor that protects the heart of the believer.', reference: 'Ephesians 6:14', difficulty: 'expert', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af5', word: 'GIRDLE OF TRUTH', hint: 'The first piece of armor, worn around the waist.', reference: 'Ephesians 6:14', difficulty: 'medium', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af6', word: 'SELF CONTROL', hint: 'The final fruit of the Spirit listed by Paul.', reference: 'Galatians 5:23', difficulty: 'medium', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af7', word: 'GENTLENESS', hint: 'A fruit of the Spirit that involves humility and kindness.', reference: 'Galatians 5:23', difficulty: 'medium', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af8', word: 'FORBEARANCE', hint: 'A fruit of the Spirit involving patient self-control.', reference: 'Galatians 5:22', difficulty: 'hard', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af9', word: 'LONGSUFFERING', hint: 'An older term for the patient endurance shown by believers.', reference: 'Galatians 5:22', difficulty: 'hard', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
+  { id: 'af10', word: 'FAITHFULNESS', hint: 'A fruit of the Spirit that reflects God\'s own character.', reference: 'Galatians 5:22', difficulty: 'medium', category: ANAGRAM_CATEGORIES.ARMOR_FRUIT },
 ];
 
 export const shuffleArray = (array) => {
@@ -113,4 +223,16 @@ export const shuffleArray = (array) => {
     [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
   }
   return newArray;
+};
+
+export const getBalancedAnagramSet = () => {
+  const easy = shuffleArray(ANAGRAMS.filter(a => a.difficulty === 'easy'));
+  const medium = shuffleArray(ANAGRAMS.filter(a => a.difficulty === 'medium'));
+  const hard = shuffleArray(ANAGRAMS.filter(a => a.difficulty === 'hard' || a.difficulty === 'expert'));
+
+  return [
+    ...easy.slice(0, 3),
+    ...medium.slice(0, 4),
+    ...hard.slice(0, 3)
+  ];
 };

@@ -121,11 +121,39 @@ export default function StatisticsScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Statistics</Text>
+        <Text style={styles.title}>Profile & Stats</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarBox}>
+            <Text style={styles.avatarText}>{progress.knowledgeLevel[0]}</Text>
+          </View>
+          <View>
+            <Text style={styles.profileLevel}>{progress.knowledgeLevel}</Text>
+            <Text style={styles.profileSub}>Joined {progress.lastPlayed ? new Date(progress.lastPlayed).toLocaleDateString() : 'Today'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Achievements')}>
+            <Text style={styles.actionEmoji}>🏆</Text>
+            <Text style={styles.actionLabel}>Awards</Text>
+            <Text style={styles.actionCount}>{progress.unlockedAchievements?.length || 0}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Reflections')}>
+            <Text style={styles.actionEmoji}>📝</Text>
+            <Text style={styles.actionLabel}>Notes</Text>
+            <Text style={styles.actionCount}>{progress.reflections?.length || 0}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Collection')}>
+            <Text style={styles.actionEmoji}>🧩</Text>
+            <Text style={styles.actionLabel}>Items</Text>
+            <Text style={styles.actionCount}>{progress.unlockedCharacters?.length + progress.unlockedBooks?.length}</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.streakSection}>
           <View style={styles.streakCard}>
             <Text style={styles.streakIcon}>🔥</Text>
@@ -243,6 +271,16 @@ const createStyles = (colors) => StyleSheet.create({
   title: { fontSize: 18, fontWeight: '600', color: colors.text },
   placeholder: { width: 60 },
   content: { flex: 1, paddingHorizontal: 20 },
+  profileHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 24, marginTop: 10 },
+  avatarBox: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  avatarText: { fontSize: 24, fontWeight: '800', color: '#FFF' },
+  profileLevel: { fontSize: 20, fontWeight: '700', color: colors.text },
+  profileSub: { fontSize: 13, color: colors.textSecondary },
+  quickActions: { flexDirection: 'row', gap: 12, marginBottom: 28 },
+  actionBtn: { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder },
+  actionEmoji: { fontSize: 20, marginBottom: 4 },
+  actionLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 2 },
+  actionCount: { fontSize: 14, fontWeight: '700', color: colors.primary },
   streakSection: { flexDirection: 'row', gap: 12, marginBottom: 28 },
   streakCard: {
     flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,

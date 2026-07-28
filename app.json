@@ -2,6 +2,7 @@
   "expo": {
     "name": "Bible Trivia",
     "slug": "bibletrivia",
+    "scheme": "bibletrivia",
     "version": "1.0.0",
     "sdkVersion": "55.0.0",
     "ios": {
@@ -11,6 +12,7 @@
       "package": "com.bibletrivia.app"
     },
     "plugins": [
+      "expo-apple-authentication",
       [
         "react-native-google-mobile-ads",
         {

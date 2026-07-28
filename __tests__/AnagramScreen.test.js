@@ -6,12 +6,22 @@ jest.useFakeTimers();
 
 jest.mock('../src/data/anagrams', () => ({
   shuffleArray: (arr) => arr,
+  getBalancedAnagramSet: () => [
+    {
+      word: 'JESUS',
+      hint: 'The Savior of the world.',
+      category: 'People',
+      reference: 'Matthew 1:21',
+      difficulty: 'easy'
+    }
+  ],
   ANAGRAMS: [
     {
       word: 'JESUS',
       hint: 'The Savior of the world.',
       category: 'People',
-      reference: 'Matthew 1:21'
+      reference: 'Matthew 1:21',
+      difficulty: 'easy'
     }
   ],
 }));
@@ -45,6 +55,7 @@ jest.mock('../src/utils/sounds', () => ({
   playCorrect: jest.fn(),
   playWrong: jest.fn(),
   playTick: jest.fn(),
+  playPowerup: jest.fn(),
 }));
 
 jest.mock('../src/utils/haptics', () => ({
@@ -58,6 +69,14 @@ jest.mock('../src/utils/analytics', () => ({
 }));
 
 describe('AnagramScreen Hint Functionality', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('displays the hint when the hint button is pressed and coins are spent', async () => {
     const navigation = {
       goBack: jest.fn(),
@@ -72,17 +91,17 @@ describe('AnagramScreen Hint Functionality', () => {
     expect(queryByText('The Savior of the world.')).toBeNull();
 
     // Find and press hint button
-    const hintButton = getByText('Hint (15 🪙)');
+    const hintButton = getByText('Show Clue (10 🪙)');
     fireEvent.press(hintButton);
 
     // Wait for the hint to appear
     await waitFor(() => {
-      expect(mockSpendCoins).toHaveBeenCalledWith(15);
+      expect(mockSpendCoins).toHaveBeenCalledWith(10);
       expect(getByText('The Savior of the world.')).toBeTruthy();
     });
 
-    // Verify the hint button is now hidden
-    expect(queryByText('Hint (15 🪙)')).toBeNull();
+    // Verify the hint button says revealed
+    expect(getByText('Clue Revealed')).toBeTruthy();
   });
 
   it('shows an alert when not enough coins are available', async () => {
@@ -98,12 +117,12 @@ describe('AnagramScreen Hint Functionality', () => {
       <AnagramScreen navigation={navigation} />
     );
 
-    const hintButton = getByText('Hint (15 🪙)');
+    const hintButton = getByText('Show Clue (10 🪙)');
     fireEvent.press(hintButton);
 
     await waitFor(() => {
       expect(mockSpendCoins).toHaveBeenCalled();
-      expect(alertSpy).toHaveBeenCalledWith('Not enough coins', 'You need 15 coins for a hint.');
+      expect(alertSpy).toHaveBeenCalledWith('Not enough coins', 'You need 10 coins for a clue.');
     });
 
     // Verify hint is still NOT visible

@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
 import { useAuth } from './AuthContext';
 import { CHARACTERS, BIBLE_BOOKS } from '../data/collectibles';
+import { ACHIEVEMENTS, getNewAchievements } from '../data/achievements';
 import { checkProStatus, subscribeToCustomerInfo, identifyPurchasesUser, clearPurchasesUser } from '../utils/purchases';
 
 const PROGRESS_KEY = 'bible_trivia_progress';
@@ -20,6 +21,7 @@ const DEFAULT_PROGRESS = {
   expertCompleted: 0,
   totalQuestionsAnswered: 0,
   totalCorrect: 0,
+  totalQuizzes: 0,
   easyCorrect: 0,
   easyTotal: 0,
   mediumCorrect: 0,
@@ -28,6 +30,7 @@ const DEFAULT_PROGRESS = {
   hardTotal: 0,
   expertCorrect: 0,
   expertTotal: 0,
+  favoriteDifficulty: 'medium',
   perfectScores: 0,
   lastPlayed: null,
   dailyChallengesCompleted: 0,
@@ -37,12 +40,13 @@ const DEFAULT_PROGRESS = {
   dailyChallengeCompleted: false,
   seenDailyQuestions: [],
   seenDidYouKnow: [],
-  coins: 200,
+  coins: 100,
   lastDailyReward: null,
   knowledgeLevel: 'Beginner',
   isPro: false,
   unlockedCharacters: [],
   unlockedBooks: [],
+  unlockedAchievements: [],
   bookProgress: {},
   reflections: [],
   unlockedEras: ['creation'],
@@ -71,6 +75,9 @@ const DEFAULT_PROGRESS = {
   missedQuestions: {}, // Tracking questions for review
 };
 
+const STATS_KEY = 'bible_trivia_stats';
+const STREAK_KEY = 'bible_trivia_streak';
+
 export const ERA_ORDER = [
   'creation',
   'patriarchs',
@@ -98,6 +105,12 @@ export const MASTERY_TIERS = {
   BRONZE: 10,
   SILVER: 30,
   GOLD: 75,
+};
+
+export const ERA_REWARDS = {
+  BRONZE: 25,
+  SILVER: 50,
+  GOLD: 150,
 };
 
 export const ERA_REQUIREMENTS = MASTERY_TIERS.BRONZE;
@@ -297,12 +310,50 @@ export function ProgressProvider({ children }) {
   const loadInitialProgress = async () => {
     try {
       const raw = await AsyncStorage.getItem(PROGRESS_KEY);
+      let merged = DEFAULT_PROGRESS;
+
       if (raw) {
-        const parsed = JSON.parse(raw);
-        let merged = { ...DEFAULT_PROGRESS, ...parsed };
-        merged = checkDailyReset(merged);
-        setProgress(merged);
+        merged = { ...DEFAULT_PROGRESS, ...JSON.parse(raw) };
       }
+
+      // Check for legacy stats and streak data to migrate
+      const legacyStatsRaw = await AsyncStorage.getItem(STATS_KEY);
+      const legacyStreakRaw = await AsyncStorage.getItem(STREAK_KEY);
+
+      if (legacyStatsRaw || legacyStreakRaw) {
+        let needsSave = false;
+
+        if (legacyStatsRaw) {
+          const stats = JSON.parse(legacyStatsRaw);
+          merged.totalQuizzes = Math.max(merged.totalQuizzes || 0, stats.totalQuizzes || 0);
+          merged.totalCorrect = Math.max(merged.totalCorrect || 0, stats.totalCorrect || 0);
+          merged.totalQuestionsAnswered = Math.max(merged.totalQuestionsAnswered || 0, stats.totalQuestions || 0);
+          merged.perfectScores = Math.max(merged.perfectScores || 0, stats.perfectScores || 0);
+          merged.easyCorrect = Math.max(merged.easyCorrect || 0, stats.easyCorrect || 0);
+          merged.easyTotal = Math.max(merged.easyTotal || 0, stats.easyTotal || 0);
+          merged.mediumCorrect = Math.max(merged.mediumCorrect || 0, stats.mediumCorrect || 0);
+          merged.mediumTotal = Math.max(merged.mediumTotal || 0, stats.mediumTotal || 0);
+          merged.hardCorrect = Math.max(merged.hardCorrect || 0, stats.hardCorrect || 0);
+          merged.hardTotal = Math.max(merged.hardTotal || 0, stats.hardTotal || 0);
+          needsSave = true;
+          await AsyncStorage.removeItem(STATS_KEY);
+        }
+
+        if (legacyStreakRaw) {
+          const streak = JSON.parse(legacyStreakRaw);
+          merged.currentStreak = Math.max(merged.currentStreak || 0, streak.currentStreak || 0);
+          merged.highestStreak = Math.max(merged.highestStreak || 0, streak.longestStreak || 0);
+          needsSave = true;
+          await AsyncStorage.removeItem(STREAK_KEY);
+        }
+
+        if (needsSave) {
+          await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(merged));
+        }
+      }
+
+      merged = checkDailyReset(merged);
+      setProgress(merged);
     } catch (e) {
       console.warn('Failed to load local progress:', e);
     }
@@ -477,8 +528,9 @@ export function ProgressProvider({ children }) {
       questionsBatch.forEach(q => {
         if (q.era && q.isCorrect) {
           eraProgress[q.era] = (eraProgress[q.era] || 0) + 1;
-          if (eraProgress[q.era] === MASTERY_TIERS.SILVER) coins += 100;
-          if (eraProgress[q.era] === MASTERY_TIERS.GOLD) coins += 500;
+          if (eraProgress[q.era] === MASTERY_TIERS.BRONZE) coins += ERA_REWARDS.BRONZE;
+          if (eraProgress[q.era] === MASTERY_TIERS.SILVER) coins += ERA_REWARDS.SILVER;
+          if (eraProgress[q.era] === MASTERY_TIERS.GOLD) coins += ERA_REWARDS.GOLD;
         }
         if (q.bibleBook && q.isCorrect) {
           bookProgress[q.bibleBook] = (bookProgress[q.bibleBook] || 0) + 1;
@@ -490,6 +542,23 @@ export function ProgressProvider({ children }) {
     }
 
     return { coins, eraProgress, bookProgress, missedQuestions };
+  };
+
+  const _checkAchievements = (updatedProgress) => {
+    const newAchievements = getNewAchievements(updatedProgress, updatedProgress.unlockedAchievements || []);
+    if (newAchievements.length > 0) {
+      const newIds = newAchievements.map(a => a.id);
+      const bonusCoins = newAchievements.reduce((sum, a) => sum + (a.reward || 0), 0);
+
+      updatedProgress.unlockedAchievements = [
+        ...(updatedProgress.unlockedAchievements || []),
+        ...newIds
+      ];
+      updatedProgress.coins = (updatedProgress.coins || 0) + bonusCoins;
+
+      return newAchievements;
+    }
+    return [];
   };
 
   const updateProgress = async (difficulty, score, total, questionsBatch, didYouKnowKey = null) => {
@@ -506,8 +575,9 @@ export function ProgressProvider({ children }) {
         updated[key] = pct;
       }
       updated[completedKey] = (updated[completedKey] || 0) + 1;
+      updated.totalQuizzes = (updated.totalQuizzes || 0) + 1;
       updated.totalQuestionsAnswered = (updated.totalQuestionsAnswered || 0) + total;
-      updated.coins = (updated.coins || 0) + 10 + bonusCoins;
+      updated.coins = (updated.coins || 0) + 5 + bonusCoins;
       updated.totalCorrect = (updated.totalCorrect || 0) + score;
       updated.lastPlayed = new Date().toISOString();
       updated.eraProgress = eraProgress;
@@ -532,8 +602,41 @@ export function ProgressProvider({ children }) {
         updated.expertTotal = (updated.expertTotal || 0) + total;
       }
 
+      // Update favorite difficulty
+      const diffCounts = {
+        easy: updated.easyTotal,
+        medium: updated.mediumTotal,
+        hard: updated.hardTotal,
+        expert: updated.expertTotal,
+      };
+      updated.favoriteDifficulty = Object.entries(diffCounts).reduce((a, b) =>
+        b[1] > a[1] ? b : a
+      )[0];
+
+      // Update Streak
+      const today = new Date().toDateString();
+      const lastPlayed = updated.lastPlayed ? new Date(updated.lastPlayed).toDateString() : null;
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+      if (lastPlayed !== today) {
+        if (lastPlayed === yesterday) {
+          updated.currentStreak += 1;
+        } else {
+          updated.currentStreak = 1;
+        }
+        if (updated.currentStreak > updated.highestStreak) {
+          updated.highestStreak = updated.currentStreak;
+        }
+      }
+
       updated.seenDidYouKnow = appendSeenEntry(updated.seenDidYouKnow, didYouKnowKey);
       updated = checkUnlocks(updated);
+
+      const newAchievs = _checkAchievements(updated);
+      if (newAchievs.length > 0) {
+        // Option to trigger a UI event here if needed
+      }
+
       saveProgress(updated);
       return updated;
     });
@@ -556,7 +659,7 @@ export function ProgressProvider({ children }) {
       updated.highestStreak = Math.max(updated.highestStreak, updated.currentStreak);
       updated.lastCompletionDate = today;
       updated.dailyChallengeCompleted = true;
-      updated.coins = (updated.coins || 0) + 50 + bonusCoins;
+      updated.coins = (updated.coins || 0) + 30 + bonusCoins;
       updated.dailyChallengesCompleted = (updated.dailyChallengesCompleted || 0) + 1;
 
       updated.totalQuestionsAnswered = (updated.totalQuestionsAnswered || 0) + total;
@@ -582,6 +685,12 @@ export function ProgressProvider({ children }) {
 
       updated.seenDidYouKnow = appendSeenEntry(updated.seenDidYouKnow, didYouKnowKey);
       updated = checkUnlocks(updated);
+
+      const newAchievs = _checkAchievements(updated);
+      if (newAchievs.length > 0) {
+        // Option to trigger a UI event here if needed
+      }
+
       saveProgress(updated);
       return updated;
     });
@@ -677,7 +786,7 @@ export function ProgressProvider({ children }) {
 
     const updated = {
       ...progress,
-      coins: (progress.coins || 0) + 50,
+      coins: (progress.coins || 0) + 30,
       lastDailyReward: today,
     };
     setProgress(updated);

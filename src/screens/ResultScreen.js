@@ -194,9 +194,9 @@ export default function ResultScreen({ route, navigation }) {
       cleanup();
 
       if (success) {
-        // Base reward for a quiz is usually 10 coins (set in updateProgress)
-        // We give another 10-25 as a bonus for watching the ad
-        const bonus = 25;
+        // Base reward for a quiz is usually 5 coins (set in updateProgress)
+        // We give another 15 as a bonus for watching the ad
+        const bonus = 20;
         if (typeof addCoins === 'function') {
           await addCoins(bonus);
         }
@@ -289,7 +289,7 @@ export default function ResultScreen({ route, navigation }) {
             >
               <Text style={styles.doubleRewardEmoji}>📺</Text>
               <Text style={styles.doubleRewardText}>
-                {adLoading ? 'Loading Video...' : 'Watch to get +25 Bonus Coins'}
+                {adLoading ? 'Loading Video...' : 'Watch to get +20 Bonus Coins'}
               </Text>
             </TouchableOpacity>
           )}

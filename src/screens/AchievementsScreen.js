@@ -2,59 +2,33 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { loadAchievements, loadStats, loadStreak } from '../utils/storage';
-import { ACHIEVEMENTS, checkAchievements } from '../data/achievements';
+import { useProgress } from '../context/ProgressContext';
+import { ACHIEVEMENTS } from '../data/achievements';
 import useReducedMotion from '../hooks/useReducedMotion';
 
 export default function AchievementsScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
+  const { progress: userProgress } = useProgress();
   const reducedMotion = useReducedMotion();
-  const [unlocked, setUnlocked] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [streak, setStreak] = useState(null);
-  const [recentUnlock, setRecentUnlock] = useState(null);
+  const [unlocked, setUnlocked] = useState(userProgress.unlockedAchievements || []);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const cardAnims = useRef(ACHIEVEMENTS.map(() => new Animated.Value(0))).current;
-  const badgeScaleAnim = useRef(new Animated.Value(0.9)).current;
-  const badgeGlowAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Promise.all([loadAchievements(), loadStats(), loadStreak()]).then(([a, s, st]) => {
-      setUnlocked(a);
-      setStats(s);
-      setStreak(st);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (stats && streak) {
-      const { newlyUnlocked } = checkAchievements(stats, streak, unlocked);
-      if (newlyUnlocked.length > 0) {
-        setRecentUnlock(newlyUnlocked[0]);
-        setUnlocked(prev => [...prev, ...newlyUnlocked]);
-      }
-    }
-  }, [stats, streak, unlocked]);
 
   const styles = createStyles(colors);
 
   const getAchievementProgress = (achievement) => {
-    if (!stats) return 0;
-    const { requirement } = achievement;
-    
-    switch (requirement.type) {
-      case 'quizzes':
-        return Math.min(stats.totalQuizzes / requirement.count, 1);
-      case 'perfect':
-        return Math.min(stats.perfectScores / requirement.count, 1);
-      case 'streak':
-        return Math.min(streak?.currentStreak / requirement.count || 0, 1);
-      case 'correct_answers':
-        return Math.min(stats.totalCorrect / requirement.count, 1);
-      default:
-        return 0;
-    }
+    // This is now handled by the achievement.check function,
+    // but for UI progress bars we can approximate.
+    if (achievement.id.startsWith('first_steps')) return Math.min(userProgress.totalCorrect / 1, 1);
+    if (achievement.id.startsWith('bible_student')) return Math.min(userProgress.totalCorrect / 50, 1);
+    if (achievement.id.startsWith('bible_scholar')) return Math.min(userProgress.totalCorrect / 250, 1);
+    if (achievement.id.startsWith('streak_7')) return Math.min(userProgress.currentStreak / 7, 1);
+    if (achievement.id.startsWith('streak_30')) return Math.min(userProgress.currentStreak / 30, 1);
+    if (achievement.id.startsWith('perfect_10')) return Math.min(userProgress.perfectScores / 10, 1);
+    if (achievement.id.startsWith('era_master')) return Math.min(userProgress.unlockedEras.length / 2, 1);
+    if (achievement.id.startsWith('collector')) return Math.min(userProgress.unlockedCharacters.length / 5, 1);
+    return 0;
   };
 
   const unlockedCount = unlocked.length;
@@ -97,21 +71,6 @@ export default function AchievementsScreen({ navigation }) {
     ).start();
   }, [cardAnims, reducedMotion, unlockedCount]);
 
-  useEffect(() => {
-    if (!recentUnlock || reducedMotion) return undefined;
-
-    badgeScaleAnim.setValue(0.9);
-    badgeGlowAnim.setValue(0);
-    Animated.spring(badgeScaleAnim, { toValue: 1, friction: 7, tension: 140, useNativeDriver: true }).start();
-    const glow = Animated.loop(
-      Animated.sequence([
-        Animated.timing(badgeGlowAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(badgeGlowAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
-      ])
-    );
-    glow.start();
-    return () => glow.stop();
-  }, [badgeGlowAnim, badgeScaleAnim, recentUnlock, reducedMotion]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -134,43 +93,6 @@ export default function AchievementsScreen({ navigation }) {
           </View>
           <Text style={styles.progressPct}>{progressPct}% Complete</Text>
         </View>
-
-        {recentUnlock && (
-          <Animated.View
-            style={[
-              styles.newBadge,
-              {
-                transform: [{ scale: badgeScaleAnim }],
-              },
-            ]}
-          >
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.newBadgeGlow,
-                {
-                  opacity: badgeGlowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.12, 0.32],
-                  }),
-                  transform: [{
-                    scale: badgeGlowAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.94, 1.08],
-                    }),
-                  }],
-                },
-              ]}
-            />
-            <Text style={styles.newBadgeIcon}>🎉</Text>
-            <View style={styles.newBadgeText}>
-              <Text style={styles.newBadgeTitle}>New Achievement!</Text>
-              <Text style={styles.newBadgeDesc}>
-                {ACHIEVEMENTS.find(a => a.id === recentUnlock)?.title}
-              </Text>
-            </View>
-          </Animated.View>
-        )}
 
         <Text style={styles.sectionTitle}>All Achievements</Text>
 
@@ -205,6 +127,9 @@ export default function AchievementsScreen({ navigation }) {
                 </Text>
                 <Text style={[styles.achievementDesc, !isUnlocked && styles.lockedSubtext]}>
                   {achievement.description}
+                </Text>
+                <Text style={[styles.rewardText, { color: colors.warning }]}>
+                  🎁 {achievement.reward} coins
                 </Text>
                 {!isUnlocked && progress > 0 && (
                   <View style={styles.progressRow}>
@@ -289,6 +214,7 @@ const createStyles = (colors) => StyleSheet.create({
   lockedText: { color: colors.textSecondary },
   achievementDesc: { fontSize: 12, color: colors.textSecondary },
   lockedSubtext: { color: colors.textMuted },
+  rewardText: { fontSize: 11, fontWeight: '700', marginTop: 4 },
   progressRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   miniBar: { flex: 1, height: 4, backgroundColor: colors.dim, borderRadius: 2, overflow: 'hidden', marginRight: 8 },
   miniFill: { height: 4, backgroundColor: colors.primary, borderRadius: 2 },

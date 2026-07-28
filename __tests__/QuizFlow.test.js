@@ -75,6 +75,14 @@ jest.mock('../src/utils/haptics', () => ({
 }));
 
 describe('Quiz flow', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('selectDidYouKnowCandidate prefers wrong answers and skips recent seen keys', () => {
     const nowISO = new Date().toISOString();
     const wrongQuestion = {

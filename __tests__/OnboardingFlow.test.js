@@ -32,6 +32,14 @@ jest.mock('../src/context/ThemeContext', () => ({
 }));
 
 describe('Onboarding flow', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('navigates to home when skip is pressed', async () => {
     const navigation = { replace: jest.fn() };
 
@@ -40,6 +48,9 @@ describe('Onboarding flow', () => {
     );
 
     fireEvent.press(getByText('Skip'));
+
+    // Fast-forward timers if there are any pending promises/timeouts
+    jest.runAllTimers();
 
     await waitFor(() => {
       expect(setOnboarded).toHaveBeenCalledWith(true);

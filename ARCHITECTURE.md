@@ -15,7 +15,7 @@
 │  └──────────────┘         │ • Restore    │                  │
 │                            └──────────────┘                  │
 │                                  │                           │
-│                                  │ purchaseCoinPackage()    │
+│                                  │ purchaseProduct()        │
 │                                  ▼                           │
 │                            ┌────────────────┐               │
 │                            │  purchases.js  │               │
@@ -57,7 +57,7 @@ User taps "Buy" on 1200 coins @ $2.99
 ShopScreen shows loading spinner
         │
         ▼
-purchaseCoinPackage("com.iguruapp.bibletrivia.coins_1200")
+purchaseProduct("com.iguruapp.bibletrivia.coins_1200")
         │
         ├─── Initialize IAP connection
         │
@@ -185,14 +185,14 @@ App.js
 ShopScreen.js
 ├── imports: ProgressContext (useProgress)
 ├── imports: purchases.js
-│   ├── react-native-iap
+│   ├── react-native-purchases
 │   ├── AsyncStorage
 │   └── Platform
 ├── imports: analytics.js
 └── imports: ThemeContext
 
 purchases.js
-├── react-native-iap (external)
+├── react-native-purchases (external)
 ├── AsyncStorage
 ├── Platform
 └── (no internal deps)
@@ -251,7 +251,7 @@ Initial State
 ## Error Handling Flow
 
 ```
-purchaseCoinPackage() throws error
+purchaseProduct() throws error
         │
         ├─ Network Error
         │  └─→ "Check your connection"

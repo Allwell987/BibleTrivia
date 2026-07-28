@@ -14,7 +14,7 @@ _Last updated: April 2, 2026_
 | Local persistence | AsyncStorage (`bible_trivia_*` keys) |
 | Cloud sync | Firebase Auth + Firestore (gated by `isFirebaseConfigured`) |
 | UI | `Animated` API, `expo-haptics`, `expo-audio` |
-| IAP | `react-native-iap` (mock-safe via `EXPO_PUBLIC_USE_MOCK_PURCHASES`) |
+| IAP | `react-native-purchases` (mock-safe via `EXPO_PUBLIC_USE_MOCK_PURCHASES`) |
 | Ads | AdMob rewarded ads (runtime `require`, degrades gracefully) |
 | Analytics | Local event log in AsyncStorage (`src/utils/analytics.js`) |
 
@@ -55,7 +55,7 @@ All routes live in `App.js`. Onboarding gate (`isOnboarded()`) runs at startup a
 - `src/utils/purchases.js`: full IAP flow with mock-safe runtime `require`, 5 product IDs, purchase + restore.
 - `src/screens/ShopScreen.js`: browsable coin packages, balance card, restore button.
 - `ProgressContext`: `addCoins()`, `earnCoins()`, `spendCoins()` all stable.
-- `app.json`: react-native-iap plugin configured with all 5 SKUs.
+- `app.json`: react-native-purchases plugin configured with all 5 SKUs.
 - **Blocked**: store console setup (App Store Connect / Google Play Console) — developer action required.
 
 ---

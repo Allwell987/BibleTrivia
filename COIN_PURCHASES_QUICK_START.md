@@ -11,7 +11,7 @@
 **Key Functions:**
 - `initializePurchases()` - Initialize IAP connection
 - `getAvailableCoinPackages()` - Get coin packages from app store
-- `purchaseCoinPackage(productId)` - Process a purchase
+- `purchaseProduct(productId)` - Process a purchase
 - `restorePurchases()` - Restore previous purchases
 - `getPurchaseHistory()` - Get purchase records
 
@@ -52,7 +52,7 @@
 
 ### 1. Install Dependencies
 ```bash
-npm install react-native-iap
+npm install react-native-purchases
 ```
 
 ### 2. Configure iOS (App Store Connect)
@@ -150,7 +150,7 @@ If purchases don't work:
 
 For issues:
 1. Check COIN_PURCHASES_SETUP.md for detailed guide
-2. Search react-native-iap GitHub issues
+2. Search react-native-purchases GitHub issues
 3. Check App Store Connect / Play Console docs
 4. Review console logs for error messages
 
@@ -158,7 +158,7 @@ For issues:
 
 1. User taps "Buy" on a coin package
 2. ShopScreen shows loading spinner
-3. App calls `purchaseCoinPackage(productId)`
+3. App calls `purchaseProduct(productId)`
 4. Device shows native payment UI
 5. User confirms payment
 6. Purchase logic processes receipt

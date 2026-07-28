@@ -94,8 +94,6 @@ export async function saveScore({ name, score, total, difficulty, timeLeft, date
       }
     }
 
-    await updateStats({ score, total, difficulty: effectiveDifficulty });
-    await updateStreak();
     const rank = updated.findIndex(e => e.id === entry.id) + 1;
     return { entries: updated, rank, isPersonalBest: rank === 1 };
   } catch (error) {
@@ -145,125 +143,14 @@ export async function updateSetting(key, value) {
   return settings;
 }
 
-export async function loadStats() {
-  try {
-    const raw = await AsyncStorage.getItem(STATS_KEY);
-    return raw ? JSON.parse(raw) : getDefaultStats();
-  } catch {
-    return getDefaultStats();
-  }
-}
-
-function getDefaultStats() {
-  return {
-    totalQuizzes: 0,
-    totalCorrect: 0,
-    totalQuestions: 0,
-    bestStreak: 0,
-    easyCorrect: 0,
-    easyTotal: 0,
-    mediumCorrect: 0,
-    mediumTotal: 0,
-    hardCorrect: 0,
-    hardTotal: 0,
-    favoriteDifficulty: null,
-    perfectScores: 0,
-    lastPlayed: null,
-  };
-}
-
-export async function updateStats({ score, total, difficulty }) {
-  try {
-    const stats = await loadStats();
-    stats.totalQuizzes += 1;
-    stats.totalCorrect += score;
-    stats.totalQuestions += total;
-    
-    if (difficulty === 'easy') {
-      stats.easyCorrect += score;
-      stats.easyTotal += total;
-    } else if (difficulty === 'medium') {
-      stats.mediumCorrect += score;
-      stats.mediumTotal += total;
-    } else {
-      stats.hardCorrect += score;
-      stats.hardTotal += total;
-    }
-    
-    if (score === total) {
-      stats.perfectScores += 1;
-    }
-    
-    stats.lastPlayed = new Date().toISOString();
-    
-    const diffCounts = {
-      easy: stats.easyTotal,
-      medium: stats.mediumTotal,
-      hard: stats.hardTotal,
-    };
-    stats.favoriteDifficulty = Object.entries(diffCounts).reduce((a, b) => 
-      b[1] > a[1] ? b : a
-    )[0];
-    
-    await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
-    return stats;
-  } catch {
-    return getDefaultStats();
-  }
-}
-
-export async function loadStreak() {
-  try {
-    const raw = await AsyncStorage.getItem(STREAK_KEY);
-    return raw ? JSON.parse(raw) : getDefaultStreak();
-  } catch {
-    return getDefaultStreak();
-  }
-}
-
-function getDefaultStreak() {
-  return {
-    currentStreak: 0,
-    longestStreak: 0,
-    lastPlayedDate: null,
-  };
-}
-
-export async function updateStreak() {
-  try {
-    const streak = await loadStreak();
-    const today = new Date().toDateString();
-    const lastPlayed = streak.lastPlayedDate ? new Date(streak.lastPlayedDate).toDateString() : null;
-    
-    if (lastPlayed === today) {
-      return streak;
-    }
-    
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    
-    if (lastPlayed === yesterday) {
-      streak.currentStreak += 1;
-    } else if (lastPlayed !== today) {
-      streak.currentStreak = 1;
-    }
-    
-    if (streak.currentStreak > streak.longestStreak) {
-      streak.longestStreak = streak.currentStreak;
-    }
-    
-    streak.lastPlayedDate = new Date().toISOString();
-    
-    await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(streak));
-    return streak;
-  } catch {
-    return getDefaultStreak();
-  }
-}
-
 export async function resetStats() {
+  // Stats and streaks are now managed in ProgressContext
+  // This function is kept for backward compatibility but should be replaced with context actions if needed
   try {
-    await AsyncStorage.setItem(STATS_KEY, JSON.stringify(getDefaultStats()));
-    await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(getDefaultStreak()));
+    const STATS_KEY = 'bible_trivia_stats';
+    const STREAK_KEY = 'bible_trivia_streak';
+    await AsyncStorage.removeItem(STATS_KEY);
+    await AsyncStorage.removeItem(STREAK_KEY);
   } catch {}
 }
 

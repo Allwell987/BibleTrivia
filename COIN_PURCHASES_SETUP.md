@@ -9,7 +9,7 @@ The following has been implemented:
 1. **Purchase Logic** (`src/utils/purchases.js`)
    - `initializePurchases()` - Initialize IAP connection
    - `getAvailableCoinPackages()` - Fetch available coin packages
-   - `purchaseCoinPackage(productId)` - Process purchase
+   - `purchaseProduct(productId)` - Process purchase
    - `restorePurchases()` - Restore previous purchases
    - `getPurchaseHistory()` - Get stored purchase records
 
@@ -33,9 +33,9 @@ The following has been implemented:
 Install the in-app purchase library:
 
 ```bash
-npm install react-native-iap
+npm install react-native-purchases
 # or
-yarn add react-native-iap
+yarn add react-native-purchases
 ```
 
 For Expo projects, also run:
@@ -119,7 +119,7 @@ Update `app.json` with IAP plugin for Expo:
   "expo": {
     "plugins": [
       [
-        "react-native-iap",
+        "react-native-purchases",
         {
           "skuAndroidList": [
             "com.iguruapp.bibletrivia.coins_250",
@@ -148,13 +148,13 @@ Update `app.json` with IAP plugin for Expo:
 
 ```javascript
 import { useProgress } from '../context/ProgressContext';
-import { purchaseCoinPackage } from '../utils/purchases';
+import { purchaseProduct } from '../utils/purchases';
 
 export default function ShopScreen({ navigation }) {
   const { progress, addCoins } = useProgress();
   
   const handlePurchase = async (productId) => {
-    const result = await purchaseCoinPackage(productId);
+    const result = await purchaseProduct(productId);
     if (result.success) {
       await addCoins(result.coins);
       // Show success message
@@ -272,7 +272,7 @@ Before launching:
 
 ## 📚 Additional Resources
 
-- [react-native-iap Documentation](https://github.com/dooboo-community/react-native-iap)
+- [react-native-purchases Documentation](https://github.com/dooboo-community/react-native-purchases)
 - [Apple App Store Connect Help](https://help.apple.com/app-store-connect)
 - [Google Play Console Help](https://support.google.com/googleplay/android-developer)
 - [Firebase Realtime Database Docs](https://firebase.google.com/docs/database)

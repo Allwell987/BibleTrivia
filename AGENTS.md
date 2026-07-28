@@ -4,18 +4,19 @@
 - Entry point is `App.js`: provider stack is `AuthProvider -> ThemeProvider -> ProgressProvider` and all routes are registered in `AppNavigator`.
 - Core state lives in `src/context/ProgressContext.js` (`progress` object + unlock/streak/coin logic). Most gameplay changes eventually touch this file.
 - Cloud/auth boundaries are `src/context/AuthContext.js` + `src/config/firebase.js`; local-first persistence is AsyncStorage via `src/utils/storage.js`.
-- Primary user loop: `HomeScreen -> QuizScreen -> ResultScreen`, with onboarding gate from `isOnboarded()` in `App.js`.
+- Primary user loop: `OnboardingScreen -> HomeScreen -> QuizScreen -> ResultScreen -> ShopScreen/LeaderboardScreen/JourneyScreen`.
+- Onboarding state `isOnboarded()` helper is located in `src/utils/storage.js`.
 
 ## Runtime flow and cross-file coupling
 - Quiz completion updates progress in bulk (`updateProgress` / `completeDailyChallenge`) from `src/screens/QuizScreen.js`; these write to AsyncStorage and optionally Firestore.
 - Difficulty locks are computed in `checkUnlocks()` (`ProgressContext`), not in screen code; UI calls `isUnlocked()` from context.
 - Onboarding completion currently routes to `Quiz` (not `Home`) in `src/screens/OnboardingScreen.js`; preserve this unless product intent changes.
-- Startup side effects in `App.js` are important: `loadSounds()`, `initAds()`, `initializePurchases()`, `logStartupConfigHealth()`, settings->`setHapticsEnabled()`.
+- Startup side effects in `App.js` are important: `loadSounds()`, `initAds()`, `initializePurchases()`, `logStartupConfigHealth()`, `setHapticsEnabled()`, `setSoundsEnabled()`.
 
 ## Integrations and guardrails
 - Firebase config uses `EXPO_PUBLIC_*` env keys with placeholders in `src/config/firebase.js`; cloud sync is gated by `isFirebaseConfigured`.
-- Firestore rules (`firestore.rules`) require authenticated users for all reads/writes; unauthenticated cloud calls will fail.
-- Purchases in `src/utils/purchases.js` support mock mode with `EXPO_PUBLIC_USE_MOCK_PURCHASES=true`; real IAP is optional runtime `require`.
+- Firestore rules (`firestore.rules`) require authenticated users for all writes and `users` collection reads; `leaderboard` is public read.
+- Purchases in `src/utils/purchases.js` use RevenueCat (`react-native-purchases`) and support mock mode with `EXPO_PUBLIC_USE_MOCK_PURCHASES=true`.
 - Rewarded ads in `src/utils/ads.js` also use runtime `require`; if module or ad unit is missing, flows degrade gracefully.
 - Analytics are local event logs in AsyncStorage (`src/utils/analytics.js`), not external telemetry.
 
@@ -25,7 +26,7 @@
   - `npm test`
   - `npm run lint`
   - `npm start`
-- Native modules (`react-native-iap`, AdMob) require native runs, not Expo Go. Use `npm run ios` / `npm run android`.
+- Native modules (`react-native-purchases`, AdMob) require native runs, not Expo Go. Use `npm run ios` / `npm run android`.
 - If plugin config in `app.json` changes, regenerate native projects (`expo prebuild --clean`) before validating iOS/Android behavior.
 
 ## Project conventions to follow
@@ -39,4 +40,3 @@
 - New screen/flow: update route registration in `App.js` and any navigation entry points (usually `HomeScreen`/`SettingsScreen`).
 - New progress fields: update `DEFAULT_PROGRESS`, `mergeProgress`, and write paths (`saveProgress`, update functions) in `src/context/ProgressContext.js`.
 - New env-dependent integration: add key to `src/utils/configHealth.js` so startup warns on missing config.
-

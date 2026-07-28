@@ -105,8 +105,9 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
+    let timer;
     if (progress.lastDailyReward !== today) {
-      setTimeout(() => {
+      timer = setTimeout(() => {
         Alert.alert(
           'Daily Reward! 🪙',
           'Welcome back! You earned 50 coins for your daily visit.',
@@ -114,7 +115,10 @@ export default function HomeScreen({ navigation }) {
         );
       }, 1500);
     }
-  }, []);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [claimDailyReward, progress.lastDailyReward]);
 
   const styles = createStyles(colors);
 
@@ -232,6 +236,25 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </Animated.View>
 
+        {Object.keys(progress.missedQuestions || {}).length >= 3 && (
+          <TouchableOpacity
+            style={[styles.dailyChallengeBtn, { backgroundColor: '#FF5722', marginTop: -10, marginBottom: 20 }]}
+            onPress={() => navigation.navigate('Quiz', { isReview: true, difficulty: 'mixed' })}
+            activeOpacity={0.8}
+          >
+            <View style={styles.dailyIconBox}>
+              <Text style={styles.dailyEmoji}>🔄</Text>
+            </View>
+            <View style={styles.dailyTextContainer}>
+              <Text style={[styles.dailyTitle, { color: '#FFF' }]}>Review Mistakes</Text>
+              <Text style={[styles.dailySub, { color: '#FFF' }]}>
+                Practice {Object.keys(progress.missedQuestions).length} questions you missed
+              </Text>
+            </View>
+            <Text style={styles.playIcon}>▶</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.dailyVerse}>
           <View style={styles.verseInner}>
             <Text style={styles.verseIcon}>📖</Text>
@@ -339,6 +362,21 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.btnIcon}>⚡</Text>
             </View>
             <Text style={styles.btnText}>Events</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={[styles.gridBtn, { flex: 1 }]} onPress={() => navigation.navigate('Anagram')}>
+            <View style={[styles.iconBox, { backgroundColor: '#9C27B020' }]}>
+              <Text style={styles.btnIcon}>🔠</Text>
+            </View>
+            <Text style={styles.btnText}>Word Scramble</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.gridBtn} onPress={() => navigation.navigate('CustomQuiz')}>
+            <View style={[styles.iconBox, { backgroundColor: '#607D8B20' }]}>
+              <Text style={styles.btnIcon}>⚙️</Text>
+            </View>
+            <Text style={styles.btnText}>Custom Quiz</Text>
           </TouchableOpacity>
         </View>
 

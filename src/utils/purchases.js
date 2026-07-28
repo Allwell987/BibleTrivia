@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 let Purchases = null;
 let RevenueCatUI = null;
@@ -33,6 +34,14 @@ const isInvalidRevenueCatKey = (key) =>
 const ENTITLEMENT_ID = 'Bible Trivia Pro';
 const PURCHASES_KEY = 'bible_trivia_purchases';
 
+const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK_PURCHASES === 'true';
+
+const MOCK_CUSTOMER_INFO = {
+  entitlements: {
+    active: USE_MOCK && process.env.EXPO_PUBLIC_MOCK_PRO === 'true' ? { [ENTITLEMENT_ID]: {} } : {},
+  },
+};
+
 export const PRODUCT_CONFIG = {
   'com.iguruapp.bibletrivia.coins_250': { coins: 250 },
   'com.iguruapp.bibletrivia.coins_500': { coins: 500 },
@@ -49,13 +58,19 @@ let connectionInitialized = false;
 const hasProEntitlement = (customerInfo) =>
   !!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID];
 
-const isPurchasesAvailable = () => !!Purchases;
+const isPurchasesAvailable = () => USE_MOCK || !!Purchases;
 
 /**
  * Initialize RevenueCat SDK
  */
 export async function initializePurchases(userId) {
   try {
+    if (USE_MOCK) {
+      console.log('✨ RevenueCat initialized (MOCK MODE)');
+      connectionInitialized = true;
+      return true;
+    }
+
     if (!isPurchasesAvailable()) return false;
 
     if (connectionInitialized) {
@@ -91,6 +106,7 @@ export async function initializePurchases(userId) {
 
 export async function identifyPurchasesUser(userId) {
   try {
+    if (USE_MOCK) return;
     if (!isPurchasesAvailable()) return;
     if (!userId) return;
     if (!connectionInitialized) {
@@ -105,6 +121,7 @@ export async function identifyPurchasesUser(userId) {
 
 export async function clearPurchasesUser() {
   try {
+    if (USE_MOCK) return;
     if (!isPurchasesAvailable()) return;
     if (!connectionInitialized) return;
     await Purchases.logOut();
@@ -115,6 +132,10 @@ export async function clearPurchasesUser() {
 
 export function subscribeToCustomerInfo(onUpdate) {
   try {
+    if (USE_MOCK) {
+      setTimeout(() => onUpdate?.({ customerInfo: MOCK_CUSTOMER_INFO, isPro: hasProEntitlement(MOCK_CUSTOMER_INFO) }), 100);
+      return () => {};
+    }
     if (!isPurchasesAvailable()) return () => {};
 
     const listener = (customerInfo) => {
@@ -139,6 +160,7 @@ export function subscribeToCustomerInfo(onUpdate) {
  */
 export async function checkProStatus() {
   try {
+    if (USE_MOCK) return hasProEntitlement(MOCK_CUSTOMER_INFO);
     if (!isPurchasesAvailable()) return false;
     const customerInfo = await Purchases.getCustomerInfo();
     return hasProEntitlement(customerInfo);
@@ -150,6 +172,7 @@ export async function checkProStatus() {
 
 export async function getCustomerInfo() {
   try {
+    if (USE_MOCK) return MOCK_CUSTOMER_INFO;
     if (!isPurchasesAvailable()) return null;
     return await Purchases.getCustomerInfo();
   } catch (e) {
@@ -163,6 +186,7 @@ export async function getCustomerInfo() {
  */
 export async function getOfferings() {
   try {
+    if (USE_MOCK) return []; // Mocks could be expanded here if needed
     if (!isPurchasesAvailable()) return [];
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
@@ -191,6 +215,12 @@ const isProPackage = (pkg) => {
  */
 export async function getProOfferings() {
   try {
+    if (USE_MOCK) {
+      return [
+        { productId: 'com.iguruapp.bibletrivia.pro_monthly', title: 'Pro Monthly (Mock)', price: '$4.99', packageId: 'monthly' },
+        { productId: 'com.iguruapp.bibletrivia.pro_yearly', title: 'Pro Yearly (Mock)', price: '$29.99', packageId: 'yearly' },
+      ];
+    }
     if (!isPurchasesAvailable()) return [];
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
@@ -216,6 +246,13 @@ export async function getProOfferings() {
  */
 export async function getAvailableCoinPackages() {
   try {
+    if (USE_MOCK) {
+      return [
+        { productId: 'com.iguruapp.bibletrivia.coins_500', title: '500 Coins (Mock)', price: '$0.99', coins: 500 },
+        { productId: 'com.iguruapp.bibletrivia.coins_1200', title: '1200 Coins (Mock)', price: '$2.99', coins: 1200 },
+        { productId: 'com.iguruapp.bibletrivia.coins_3000', title: '3000 Coins (Mock)', price: '$4.99', coins: 3000 },
+      ];
+    }
     if (!isPurchasesAvailable()) return [];
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
@@ -241,6 +278,17 @@ export async function getAvailableCoinPackages() {
  */
 export async function purchaseProduct(pkgOrId) {
   try {
+    if (USE_MOCK) {
+      const productId = typeof pkgOrId === 'string' ? pkgOrId : (pkgOrId?.productId || '');
+      const config = PRODUCT_CONFIG[productId] || {};
+      console.log('🛒 Mock purchase successful:', productId);
+      return {
+        success: true,
+        isPro: !!config.isPro,
+        coins: config.coins || 0,
+        customerInfo: MOCK_CUSTOMER_INFO,
+      };
+    }
     if (!isPurchasesAvailable()) {
       return {
         success: false,
@@ -296,6 +344,14 @@ export async function purchaseCoinPackage(productId) {
  */
 export async function restorePurchases() {
   try {
+    if (USE_MOCK) {
+      return {
+        success: true,
+        isProRestored: hasProEntitlement(MOCK_CUSTOMER_INFO),
+        customerInfo: MOCK_CUSTOMER_INFO,
+        coinsRestored: 0,
+      };
+    }
     if (!isPurchasesAvailable()) {
       return { success: false, error: 'Purchases module unavailable' };
     }
@@ -320,8 +376,20 @@ export async function restorePurchases() {
  */
 export async function presentPaywall() {
   try {
+    if (USE_MOCK) {
+      Alert.alert('Mock Paywall', 'Select outcome:', [
+        { text: 'Upgrade Success', onPress: () => {} },
+        { text: 'Cancel', style: 'cancel' }
+      ]);
+      return true; // Simplified mock
+    }
     if (Platform.OS === 'web') {
       console.warn('RevenueCat Paywalls are not supported on web environment.');
+      return false;
+    }
+
+    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+      console.warn('RevenueCat Paywalls are not supported in Expo Go. Use a development build (npx expo run:ios/android) to test Paywalls.');
       return false;
     }
 
@@ -343,7 +411,7 @@ export async function presentPaywall() {
   } catch (e) {
     // Check for the specific "browser environment" error to provide better feedback
     if (e?.message?.includes('browser environment') || e?.message?.includes('document is not available')) {
-      console.error('RevenueCat Error: The SDK is trying to use a web implementation in a native environment. This usually means native modules are not correctly linked or the bundler is misconfigured.');
+      console.error('RevenueCat Error: The SDK is trying to use a web implementation in a native environment. This usually means native modules are not correctly linked or the bundler is misconfigured, or you are running in Expo Go.');
     } else {
       console.error('Paywall error:', e);
     }
@@ -355,6 +423,10 @@ export async function presentPaywall() {
  * Show Customer Center (for subscription management)
  */
 export async function presentCustomerCenter() {
+  if (USE_MOCK) {
+    Alert.alert('Mock Customer Center', 'This would show subscription management.');
+    return;
+  }
   if (Platform.OS === 'ios' || Platform.OS === 'android') {
     try {
       if (!RevenueCatUI) return;
