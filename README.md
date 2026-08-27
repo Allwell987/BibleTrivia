@@ -111,3 +111,15 @@ npx expo start
 - [ ] App Store & Play Store submission
 
 See `PRODUCTION_CHECKLIST.md` for a full launch guide.
+
+## Automated Store Release
+
+After the store listings, production credentials, and EAS project credentials are configured, run:
+
+```bash
+npm run release
+```
+
+This waits for production iOS and Android builds, then submits the latest artifact for each platform. The current EAS profile sends Android to the `internal` track; change `submit.production.android.track` in `eas.json` to `production` when the app is ready for public rollout.
+
+For CI, provide `EXPO_TOKEN` and configure the Apple and Google Play credentials required by EAS. The release commands are non-interactive by design, so missing credentials stop the release instead of waiting for input.

@@ -5,16 +5,24 @@
     "scheme": "bibletrivia",
     "version": "1.0.0",
     "sdkVersion": "55.0.0",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "bundleIdentifier": "com.iguruapp.bibletrivia",
-      "buildNumber": "5"
+      "buildNumber": "6",
+      "supportsTablet": true
     },
     "android": {
-      "package": "com.bibletrivia.app"
-    },
-    "react-native-google-mobile-ads": {
-      "android_app_id": "ca-app-pub-2269638303600030~1530181074",
-      "ios_app_id": "ca-app-pub-2269638303600030~3719232270"
+      "package": "com.iguruapp.bibletrivia",
+      "versionCode": 6,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "plugins": [
       "expo-apple-authentication",
@@ -22,9 +30,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-2269638303600030~1530181074",
-          "iosAppId": "ca-app-pub-2269638303600030~3719232270",
-          "android_app_id": "ca-app-pub-2269638303600030~1530181074",
-          "ios_app_id": "ca-app-pub-2269638303600030~3719232270"
+          "iosAppId": "ca-app-pub-2269638303600030~3719232270"
         }
       ],
       "expo-secure-store",
@@ -43,7 +49,8 @@
       },
       "store": {
         "privacyPolicyUrl": "https://github.com/Allwell987/BibleTrivia/blob/main/PRIVACY_POLICY.md",
-        "supportUrl": "https://github.com/Allwell987/BibleTrivia/issues"
+        "supportUrl": "https://github.com/Allwell987/BibleTrivia/issues",
+        "dataDeletionUrl": "https://raw.githubusercontent.com/Allwell987/BibleTrivia/main/DATA_DELETION.md"
       }
     },
     "owner": "allwell8966"

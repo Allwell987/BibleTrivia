@@ -10,11 +10,14 @@ import {
   OAuthProvider,
   onAuthStateChanged,
   signOut,
+  deleteUser,
   getReactNativePersistence
 } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '../config/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { auth, db, isFirebaseConfigured } from '../config/firebase';
 import { trackEvent } from '../utils/analytics';
 import { identifyPurchasesUser, clearPurchasesUser } from '../utils/purchases';
+import { clearAllLocalData, deleteLeaderboardEntriesForUser } from '../utils/storage';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -158,6 +161,35 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Permanently deletes the signed-in user's cloud account, leaderboard entries, and local data.
+  const deleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      return { success: false, error: 'not_signed_in' };
+    }
+
+    try {
+      if (isFirebaseConfigured) {
+        await deleteLeaderboardEntriesForUser(currentUser.uid);
+        await deleteDoc(doc(db, 'users', currentUser.uid)).catch(() => {});
+        await deleteUser(currentUser);
+      }
+
+      await clearPurchasesUser();
+      await clearAllLocalData();
+      trackEvent('auth_action_requested', { method: 'delete_account' });
+      return { success: true };
+    } catch (e) {
+      if (e.code === 'auth/requires-recent-login') {
+        trackEvent('auth_action_failed', { method: 'delete_account', reason: 'requires_recent_login' });
+        return { success: false, error: 'requires_recent_login' };
+      }
+      console.error('Delete account error:', e);
+      trackEvent('auth_action_failed', { method: 'delete_account', reason: e.code || 'unknown_error' });
+      return { success: false, error: e.code || 'unknown_error' };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -165,6 +197,7 @@ export function AuthProvider({ children }) {
       signInWithApple,
       signInWithGoogle,
       logout,
+      deleteAccount,
       isAppleAvailable,
       isFirebaseConfigured,
       isGoogleSignInAvailable,

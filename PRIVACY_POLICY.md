@@ -2,7 +2,7 @@
 
 **Bible Trivia App**
 Version 1.0.0
-Last Updated: March 2026
+Last Updated: August 2026
 
 ## 1. Introduction
 
@@ -16,11 +16,19 @@ By using the Bible Trivia App, you agree to the collection and use of informatio
 - **Leaderboard Names**: When you voluntarily enter a name to save your quiz score, this name is stored locally on your device.
 - **Quiz Preferences**: Settings you choose (such as sound preferences, theme selection, timer duration) are stored locally.
 
-### 2.2 Automatically Collected Information
-We do not collect any personally identifiable information automatically. The App operates primarily offline.
+### 2.2 Sign-In Information (Optional)
+Signing in is optional. If you choose to sign in with Google or Sign in with Apple, we use Firebase Authentication to process:
+- **Name and email address** associated with your chosen account (Apple Sign-In allows you to hide your email).
+- **A unique user ID**, used to sync your progress, coin balance, and purchases across devices and to identify you on the global leaderboard.
 
-### 2.3 Local Storage
-All quiz data, statistics, and preferences are stored locally on your device using AsyncStorage. This data remains on your device and is not transmitted to our servers.
+You can sign out at any time from the App's Settings screen, which stops any further cloud sync.
+
+### 2.3 Automatically Collected Information
+- **Advertising Identifier**: If ads are shown in the App, our ad partner (Google AdMob) may collect your device's advertising ID and related device/network information to serve and measure ads. See Section 4 for details.
+- We do not otherwise collect personally identifiable information automatically. Core gameplay operates offline.
+
+### 2.4 Local and Cloud Storage
+Quiz data, statistics, and preferences are stored locally on your device using AsyncStorage. If you sign in, a subset of this data (progress, coin balance, purchase records, leaderboard entry) is also synced to our Firebase/Firestore backend so it can be restored on other devices.
 
 ## 3. How We Use Your Information
 
@@ -40,6 +48,16 @@ The Bible Trivia App may include links to third-party websites or services. We a
 The App is built using React Native and Expo SDK, which may collect certain device information in accordance with their privacy policies:
 - [Expo Privacy Policy](https://expo.io/privacy)
 - [React Native Privacy Policy](https://reactnative.dev/privacy)
+
+### Authentication Providers
+If you sign in, your name, email, and a unique account identifier are shared with and processed by:
+- [Firebase/Google Privacy Policy](https://policies.google.com/privacy)
+- [Sign in with Apple Privacy Policy](https://www.apple.com/legal/privacy/)
+
+### Advertising (Google AdMob)
+The App may display ads (including rewarded and interstitial ads) served by Google AdMob. AdMob may collect your device's advertising identifier, IP address, and other device/usage information to serve ads, measure ad performance, and (subject to your consent/device settings) personalize ads. You can opt out of personalized advertising through your device's ad settings (e.g., "Limit Ad Tracking" on iOS or "Opt out of Ads Personalization" on Android).
+- [Google AdMob Privacy Policy](https://policies.google.com/privacy)
+- [How Google uses data](https://policies.google.com/technologies/partner-sites)
 
 ### In-App Purchases
 The App offers optional in-app purchases for virtual coin packs used for gameplay features.
@@ -65,7 +83,7 @@ The Bible Trivia App is appropriate for users of all ages, including children. W
 
 If you are accessing the App from outside your country, please note that information may be transferred to and processed in countries with different data protection laws. By using the App, you consent to such transfer.
 
-## 8. Your Rights
+## 8. Your Rights and Data Deletion
 
 Depending on your location, you may have certain rights regarding your personal information, including:
 - The right to access your personal data
@@ -73,7 +91,11 @@ Depending on your location, you may have certain rights regarding your personal 
 - The right to delete your data
 - The right to data portability
 
-Since all data is stored locally on your device, you can delete this data at any time by uninstalling the App or clearing the App's data from your device settings.
+**If you never signed in**: all data is stored locally on your device. You can delete it at any time by uninstalling the App or clearing the App's data from your device settings.
+
+**If you signed in with Google or Apple**: you can permanently delete your cloud account and all associated data (progress, coin balance, purchase history, leaderboard entry) directly in the App via **Settings > Account & Sync > Delete Account & Data**. Alternatively, use our [Data Deletion Request page](https://github.com/Allwell987/BibleTrivia/blob/main/DATA_DELETION.md), or email [support@bibletrivia.app](mailto:support@bibletrivia.app) with the subject "Delete My Data" from the email address associated with your account.
+
+We will process deletion requests within 30 days. Local data on your device is not affected by cloud account deletion unless you also uninstall the App.
 
 ## 9. Changes to This Policy
 
@@ -92,11 +114,14 @@ If you have any questions about this Privacy Policy or our privacy practices, pl
 
 | Data Type | Stored Where | Shared | Purpose |
 |-----------|-------------|--------|---------|
-| Quiz Scores | Your device only | No | Leaderboard display |
-| Statistics | Your device only | No | Progress tracking |
+| Quiz Scores | Your device (+ cloud if signed in) | No | Leaderboard display |
+| Statistics | Your device (+ cloud if signed in) | No | Progress tracking |
 | Settings | Your device only | No | App preferences |
-| Leaderboard Names | Your device only | No | Score identification |
+| Leaderboard Names | Your device (+ cloud if signed in) | No | Score identification |
+| Name / Email | Cloud (only if signed in) | No | Account sign-in, cross-device sync |
+| Purchase records | Your device (+ cloud if signed in) | No (processed via App Store/Play) | Restore purchases, coin balance |
+| Advertising ID | Not stored by us | Yes, with Google AdMob | Serving/measuring ads |
 
 ---
 
-*This Privacy Policy was last updated on March 30, 2026.*
+*This Privacy Policy was last updated on August 27, 2026.*

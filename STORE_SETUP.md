@@ -8,7 +8,7 @@
 - Configure RevenueCat products and entitlements to match the app identifiers.
 - Verify the app bundle IDs:
   - iOS: com.iguruapp.bibletrivia
-  - Android: com.bibletrivia.app
+  - Android: com.iguruapp.bibletrivia
 
 ## Release values
 - Keep mock purchases disabled for production builds.

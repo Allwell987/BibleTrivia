@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { collection, addDoc, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, limit, getDocs, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
 
+const PROGRESS_KEY = 'bible_trivia_progress';
 const SCORES_KEY_EASY   = 'bible_trivia_scores_easy';
 const SCORES_KEY_MEDIUM = 'bible_trivia_scores_medium';
 const SCORES_KEY_HARD   = 'bible_trivia_scores_hard';
@@ -10,6 +11,8 @@ const STATS_KEY = 'bible_trivia_stats';
 const STREAK_KEY = 'bible_trivia_streak';
 const ONBOARDED_KEY = 'bible_trivia_onboarded';
 const ACHIEVEMENTS_KEY = 'bible_trivia_achievements';
+const ANALYTICS_KEY = 'bible_trivia_analytics_events';
+const USER_KEY = 'bible_trivia_user';
 const MAX_SCORES = 10;
 
 function scoresKey(difficulty) {
@@ -205,4 +208,33 @@ export async function resetAchievements() {
   try {
     await AsyncStorage.removeItem(ACHIEVEMENTS_KEY);
   } catch {}
+}
+
+// Removes all locally stored gameplay/account data, used for account deletion requests.
+export async function clearAllLocalData() {
+  try {
+    await AsyncStorage.multiRemove([
+      PROGRESS_KEY,
+      SCORES_KEY_EASY,
+      SCORES_KEY_MEDIUM,
+      SCORES_KEY_HARD,
+      SETTINGS_KEY,
+      STATS_KEY,
+      STREAK_KEY,
+      ACHIEVEMENTS_KEY,
+      ANALYTICS_KEY,
+      USER_KEY,
+    ]);
+  } catch {}
+}
+
+export async function deleteLeaderboardEntriesForUser(userId) {
+  if (!userId || !isFirebaseConfigured) return;
+  try {
+    const entriesQuery = query(collection(db, 'leaderboard'), where('userId', '==', userId));
+    const snapshot = await getDocs(entriesQuery);
+    await Promise.all(snapshot.docs.map((entryDoc) => deleteDoc(entryDoc.ref)));
+  } catch (error) {
+    console.warn('Failed to delete leaderboard entries:', error);
+  }
 }

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.iguruapp.bibletrivia",
+      "sha256_cert_fingerprints": [
+        "58:B9:49:64:C9:09:BB:E4:41:F2:E6:77:24:D9:25:1B:7F:37:E1:5E:99:09:D2:03:D0:9F:18:71:5E:6A:52:66"
+      ]
+    }
+  }
+]

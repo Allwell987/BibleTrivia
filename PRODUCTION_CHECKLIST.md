@@ -65,7 +65,7 @@
    - Default language: English
    - App type: Game
    - Category: Trivia
-  - Android package name: com.bibletrivia.app
+  - Android package name: com.iguruapp.bibletrivia
 3. Complete Store Listing:
    - Short description (80 chars max)
    - Full description (4000 chars max)

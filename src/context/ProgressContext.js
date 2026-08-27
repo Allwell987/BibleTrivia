@@ -794,6 +794,11 @@ export function ProgressProvider({ children }) {
     return true;
   };
 
+  // Resets in-memory progress to defaults; local/cloud storage is cleared separately (e.g. on account deletion).
+  const resetProgress = () => {
+    setProgress(DEFAULT_PROGRESS);
+  };
+
   return (
     <ProgressContext.Provider value={{
       progress,
@@ -810,6 +815,7 @@ export function ProgressProvider({ children }) {
       getStreakMilestone,
       saveReflection,
       claimDailyReward,
+      resetProgress,
     }}>
       {children}
     </ProgressContext.Provider>

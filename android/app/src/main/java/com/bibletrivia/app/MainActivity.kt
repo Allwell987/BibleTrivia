@@ -1,4 +1,4 @@
-package com.bibletrivia.app
+package com.iguruapp.bibletrivia
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

@@ -24,12 +24,13 @@ const PRIVACY_URL = 'https://your-domain.com/privacy-policy';
 export default function SettingsScreen({ navigation }) {
   const { theme, updateTheme } = useTheme();
   const { colors } = theme;
-  const { progress } = useProgress();
+  const { progress, resetProgress } = useProgress();
   const {
     user,
     signInWithApple,
     signInWithGoogle,
     logout,
+    deleteAccount,
     isAppleAvailable,
     isFirebaseConfigured,
     isGoogleSignInAvailable,
@@ -41,6 +42,7 @@ export default function SettingsScreen({ navigation }) {
   const [showRevenueCatDiagnostics, setShowRevenueCatDiagnostics] = useState(false);
   const [revenueCatDiagnostics, setRevenueCatDiagnostics] = useState(null);
   const [revenueCatDiagnosticsLoading, setRevenueCatDiagnosticsLoading] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -99,6 +101,57 @@ export default function SettingsScreen({ navigation }) {
     await resetStats();
     await resetAchievements();
     await trackEvent('settings_data_reset');
+  };
+
+  const attemptDeleteAccount = async () => {
+    setDeletingAccount(true);
+    const result = await deleteAccount();
+    setDeletingAccount(false);
+
+    if (result.success) {
+      resetProgress();
+      Alert.alert('Account Deleted', 'Your account and data have been permanently removed.');
+      return;
+    }
+
+    if (result.error === 'requires_recent_login') {
+      Alert.alert(
+        'Please Sign In Again',
+        'For your security, sign in again to confirm account deletion.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Sign In',
+            onPress: async () => {
+              const isApple = user?.providerData?.[0]?.providerId === 'apple.com';
+              if (Platform.OS === 'ios' && isApple && isAppleAvailable) {
+                await signInWithApple();
+              } else {
+                await signInWithGoogle();
+              }
+              await attemptDeleteAccount();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Deletion Failed',
+      'We could not delete your account. Please try again or email support@bibletrivia.app.'
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account & Data',
+      'This permanently deletes your account, cloud progress, purchase history, and leaderboard entries. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: attemptDeleteAccount },
+      ]
+    );
   };
 
   const handleClearAnalytics = async () => {
@@ -251,6 +304,18 @@ export default function SettingsScreen({ navigation }) {
                 <Text style={styles.logoutText}>Sign Out</Text>
               </TouchableOpacity>
             </View>
+          )}
+
+          {user && (
+            <TouchableOpacity
+              style={[styles.dangerBtn, { marginTop: 12 }]}
+              onPress={handleDeleteAccount}
+              disabled={deletingAccount}
+            >
+              <Text style={styles.dangerBtnText}>
+                {deletingAccount ? 'Deleting…' : 'Delete Account & Data'}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
 

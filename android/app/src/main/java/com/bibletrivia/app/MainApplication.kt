@@ -1,4 +1,4 @@
-package com.bibletrivia.app
+package com.iguruapp.bibletrivia
 
 import android.app.Application
 import android.content.res.Configuration

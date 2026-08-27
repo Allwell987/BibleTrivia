@@ -5,6 +5,7 @@
   },
   "build": {
     "preview": {
+      "node": "24.14.1",
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_USE_MOCK_PURCHASES": "false",
@@ -31,6 +32,7 @@
       }
     },
     "production": {
+      "node": "24.14.1",
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_USE_MOCK_PURCHASES": "false",
@@ -52,6 +54,15 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "iam.allwell@icloud.com",
+        "appleTeamId": "WU8MF4JT72",
+        "ascAppId": "6796074637"
+      },
+      "android": {
+        "track": "internal"
+      }
+    }
   }
 }
