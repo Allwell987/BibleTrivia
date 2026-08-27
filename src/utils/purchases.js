@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Alert } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { trackEvent } from './analytics';
 
 let Purchases = null;
 let RevenueCatUI = null;
@@ -28,7 +29,8 @@ const REVENUECAT_API_KEY = Platform.select({
 const isInvalidRevenueCatKey = (key) =>
   !key ||
   typeof key !== 'string' ||
-  key.includes('YOUR_');
+  key.includes('YOUR_') ||
+  key.startsWith('test_');
 
 // Product requirement: entitlement name should be exactly "Bible Trivia Pro".
 const ENTITLEMENT_ID = 'Bible Trivia Pro';
@@ -55,6 +57,27 @@ export const PRODUCT_CONFIG = {
 
 let connectionInitialized = false;
 
+const safeTrack = (name, params = {}) => {
+  trackEvent(name, params).catch(() => {});
+};
+
+const savePurchaseRecord = async ({ productId, transactionId, coins = 0, isPro = false }) => {
+  try {
+    if (!productId) return;
+    const existing = await getPurchaseHistory();
+    const record = {
+      productId,
+      transactionId: transactionId || null,
+      coins,
+      isPro,
+      timestamp: new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(PURCHASES_KEY, JSON.stringify([record, ...existing]));
+  } catch (error) {
+    console.warn('Failed to save purchase history:', error?.message || error);
+  }
+};
+
 const hasProEntitlement = (customerInfo) =>
   !!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID];
 
@@ -65,23 +88,35 @@ const isPurchasesAvailable = () => USE_MOCK || !!Purchases;
  */
 export async function initializePurchases(userId) {
   try {
+    safeTrack('rc_init_started', {
+      platform: Platform.OS,
+      is_mock: USE_MOCK,
+      has_user: !!userId,
+    });
+
     if (USE_MOCK) {
       console.log('✨ RevenueCat initialized (MOCK MODE)');
+      safeTrack('rc_init_succeeded', { mode: 'mock' });
       connectionInitialized = true;
       return true;
     }
 
-    if (!isPurchasesAvailable()) return false;
+    if (!isPurchasesAvailable()) {
+      safeTrack('rc_init_failed', { reason: 'module_unavailable' });
+      return false;
+    }
 
     if (connectionInitialized) {
       if (userId) {
         await Purchases.logIn(String(userId));
       }
+      safeTrack('rc_init_succeeded', { mode: 'reused_session' });
       return true;
     }
 
     if (!__DEV__ && isInvalidRevenueCatKey(REVENUECAT_API_KEY)) {
       console.error('⚠️ RevenueCat initialization blocked: missing production API key.');
+      safeTrack('rc_init_failed', { reason: 'invalid_production_key' });
       return false;
     }
 
@@ -97,9 +132,13 @@ export async function initializePurchases(userId) {
 
     connectionInitialized = true;
     console.log('✅ RevenueCat initialized');
+    safeTrack('rc_init_succeeded', { mode: 'configured' });
     return true;
   } catch (error) {
     console.error('⚠️ Failed to initialize RevenueCat:', error?.message || error);
+    safeTrack('rc_init_failed', {
+      reason: error?.message || 'unknown_error',
+    });
     return false;
   }
 }
@@ -114,8 +153,10 @@ export async function identifyPurchasesUser(userId) {
       return;
     }
     await Purchases.logIn(String(userId));
+    safeTrack('rc_user_identified', { has_user: true });
   } catch (e) {
     console.error('RevenueCat logIn failed:', e?.message || e);
+    safeTrack('rc_user_identify_failed', { reason: e?.message || 'unknown_error' });
   }
 }
 
@@ -125,8 +166,10 @@ export async function clearPurchasesUser() {
     if (!isPurchasesAvailable()) return;
     if (!connectionInitialized) return;
     await Purchases.logOut();
+    safeTrack('rc_user_cleared');
   } catch (e) {
     console.error('RevenueCat logOut failed:', e?.message || e);
+    safeTrack('rc_user_clear_failed', { reason: e?.message || 'unknown_error' });
   }
 }
 
@@ -188,13 +231,23 @@ export async function getOfferings() {
   try {
     if (USE_MOCK) return []; // Mocks could be expanded here if needed
     if (!isPurchasesAvailable()) return [];
+    safeTrack('rc_offerings_fetch_started', { source: 'all' });
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
+      safeTrack('rc_offerings_fetch_succeeded', {
+        source: 'all',
+        package_count: offerings.current.availablePackages.length,
+      });
       return offerings.current.availablePackages;
     }
+    safeTrack('rc_offerings_fetch_empty', { source: 'all', reason: 'no_current_offering' });
     return [];
   } catch (e) {
     console.error('Error fetching offerings:', e);
+    safeTrack('rc_offerings_fetch_failed', {
+      source: 'all',
+      reason: e?.message || 'unknown_error',
+    });
     return [];
   }
 }
@@ -222,9 +275,10 @@ export async function getProOfferings() {
       ];
     }
     if (!isPurchasesAvailable()) return [];
+    safeTrack('rc_offerings_fetch_started', { source: 'pro' });
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
-      return offerings.current.availablePackages
+      const proPackages = offerings.current.availablePackages
         .filter(isProPackage)
         .map((pkg) => ({
           productId: pkg.product.identifier,
@@ -233,10 +287,24 @@ export async function getProOfferings() {
           packageId: pkg.identifier,
           package: pkg,
         }));
+      if (proPackages.length === 0) {
+        safeTrack('rc_offerings_fetch_empty', { source: 'pro', reason: 'no_matching_products' });
+      } else {
+        safeTrack('rc_offerings_fetch_succeeded', {
+          source: 'pro',
+          package_count: proPackages.length,
+        });
+      }
+      return proPackages;
     }
+    safeTrack('rc_offerings_fetch_empty', { source: 'pro', reason: 'no_current_offering' });
     return [];
   } catch (e) {
     console.error('Error fetching pro offerings:', e);
+    safeTrack('rc_offerings_fetch_failed', {
+      source: 'pro',
+      reason: e?.message || 'unknown_error',
+    });
     return [];
   }
 }
@@ -254,9 +322,10 @@ export async function getAvailableCoinPackages() {
       ];
     }
     if (!isPurchasesAvailable()) return [];
+    safeTrack('rc_offerings_fetch_started', { source: 'coins' });
     const offerings = await Purchases.getOfferings();
     if (offerings.current !== null) {
-      return offerings.current.availablePackages
+      const coinPackages = offerings.current.availablePackages
         .filter((pkg) => PRODUCT_CONFIG[pkg.product.identifier]?.coins)
         .map((pkg) => ({
           productId: pkg.product.identifier,
@@ -265,10 +334,24 @@ export async function getAvailableCoinPackages() {
           coins: PRODUCT_CONFIG[pkg.product.identifier].coins,
           package: pkg,
         }));
+      if (coinPackages.length === 0) {
+        safeTrack('rc_offerings_fetch_empty', { source: 'coins', reason: 'no_matching_products' });
+      } else {
+        safeTrack('rc_offerings_fetch_succeeded', {
+          source: 'coins',
+          package_count: coinPackages.length,
+        });
+      }
+      return coinPackages;
     }
+    safeTrack('rc_offerings_fetch_empty', { source: 'coins', reason: 'no_current_offering' });
     return [];
   } catch (e) {
     console.error('Error fetching coin packages:', e);
+    safeTrack('rc_offerings_fetch_failed', {
+      source: 'coins',
+      reason: e?.message || 'unknown_error',
+    });
     return [];
   }
 }
@@ -277,19 +360,42 @@ export async function getAvailableCoinPackages() {
  * Purchase a package or product id
  */
 export async function purchaseProduct(pkgOrId) {
+  const productId = typeof pkgOrId === 'string'
+    ? pkgOrId
+    : (pkgOrId?.productId || pkgOrId?.product?.identifier || 'unknown_product');
+
   try {
+    safeTrack('rc_purchase_started', { product_id: productId });
+
     if (USE_MOCK) {
-      const productId = typeof pkgOrId === 'string' ? pkgOrId : (pkgOrId?.productId || '');
       const config = PRODUCT_CONFIG[productId] || {};
+      const isPro = !!config.isPro;
+      const coins = config.coins || 0;
+      await savePurchaseRecord({
+        productId,
+        transactionId: `mock_${Date.now()}`,
+        coins,
+        isPro,
+      });
       console.log('🛒 Mock purchase successful:', productId);
+      safeTrack('rc_purchase_succeeded', {
+        product_id: productId,
+        is_pro: isPro,
+        coins,
+        mode: 'mock',
+      });
       return {
         success: true,
-        isPro: !!config.isPro,
-        coins: config.coins || 0,
+        isPro,
+        coins,
         customerInfo: MOCK_CUSTOMER_INFO,
       };
     }
     if (!isPurchasesAvailable()) {
+      safeTrack('rc_purchase_failed', {
+        product_id: productId,
+        reason: 'module_unavailable',
+      });
       return {
         success: false,
         error: 'Purchases module unavailable',
@@ -309,10 +415,26 @@ export async function purchaseProduct(pkgOrId) {
     const { customerInfo } = purchaseResult;
     const isPro = hasProEntitlement(customerInfo);
 
-    const productId = typeof pkgOrId === 'string'
-      ? pkgOrId
-      : (pkgOrId?.productId || pkgOrId?.product?.identifier || '');
     const coins = PRODUCT_CONFIG[productId]?.coins || 0;
+    const transactionId =
+      purchaseResult?.transaction?.transactionIdentifier ||
+      purchaseResult?.transaction?.purchaseToken ||
+      purchaseResult?.productIdentifier ||
+      null;
+
+    await savePurchaseRecord({
+      productId,
+      transactionId,
+      coins,
+      isPro,
+    });
+
+    safeTrack('rc_purchase_succeeded', {
+      product_id: productId,
+      is_pro: isPro,
+      coins,
+      has_transaction_id: !!transactionId,
+    });
 
     return {
       success: true,
@@ -323,6 +445,12 @@ export async function purchaseProduct(pkgOrId) {
   } catch (error) {
     if (!error?.userCancelled) {
       console.error('Purchase error:', error);
+      safeTrack('rc_purchase_failed', {
+        product_id: productId,
+        reason: error?.message || 'purchase_failed',
+      });
+    } else {
+      safeTrack('rc_purchase_cancelled', { product_id: productId });
     }
     return {
       success: false,
@@ -345,6 +473,7 @@ export async function purchaseCoinPackage(productId) {
 export async function restorePurchases() {
   try {
     if (USE_MOCK) {
+      safeTrack('rc_restore_succeeded', { mode: 'mock' });
       return {
         success: true,
         isProRestored: hasProEntitlement(MOCK_CUSTOMER_INFO),
@@ -353,11 +482,15 @@ export async function restorePurchases() {
       };
     }
     if (!isPurchasesAvailable()) {
+      safeTrack('rc_restore_failed', { reason: 'module_unavailable' });
       return { success: false, error: 'Purchases module unavailable' };
     }
 
     const customerInfo = await Purchases.restorePurchases();
     const isProRestored = hasProEntitlement(customerInfo);
+    safeTrack('rc_restore_succeeded', {
+      is_pro_restored: isProRestored,
+    });
 
     return {
       success: true,
@@ -367,6 +500,7 @@ export async function restorePurchases() {
     };
   } catch (error) {
     console.error('Restore error:', error);
+    safeTrack('rc_restore_failed', { reason: error?.message || 'restore_failed' });
     return { success: false, error: error?.message || 'restore_failed' };
   }
 }
@@ -376,30 +510,36 @@ export async function restorePurchases() {
  */
 export async function presentPaywall() {
   try {
+    safeTrack('rc_paywall_open_started');
     if (USE_MOCK) {
       Alert.alert('Mock Paywall', 'Select outcome:', [
         { text: 'Upgrade Success', onPress: () => {} },
         { text: 'Cancel', style: 'cancel' }
       ]);
+      safeTrack('rc_paywall_open_succeeded', { mode: 'mock' });
       return true; // Simplified mock
     }
     if (Platform.OS === 'web') {
       console.warn('RevenueCat Paywalls are not supported on web environment.');
+      safeTrack('rc_paywall_open_failed', { reason: 'web_unsupported' });
       return false;
     }
 
     if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
       console.warn('RevenueCat Paywalls are not supported in Expo Go. Use a development build (npx expo run:ios/android) to test Paywalls.');
+      safeTrack('rc_paywall_open_failed', { reason: 'expo_go_unsupported' });
       return false;
     }
 
     if (!RevenueCatUI || !isPurchasesAvailable()) {
       console.warn('RevenueCatUI or Purchases module not available.');
+      safeTrack('rc_paywall_open_failed', { reason: 'module_unavailable' });
       return false;
     }
 
     if (typeof RevenueCatUI.presentPaywall !== 'function') {
       console.warn('RevenueCatUI.presentPaywall is not a function.');
+      safeTrack('rc_paywall_open_failed', { reason: 'missing_present_paywall' });
       return false;
     }
 
@@ -407,7 +547,9 @@ export async function presentPaywall() {
 
     // Refresh customer info after paywall closes
     const customerInfo = await Purchases.getCustomerInfo();
-    return hasProEntitlement(customerInfo);
+    const isPro = hasProEntitlement(customerInfo);
+    safeTrack('rc_paywall_open_succeeded', { upgraded: isPro });
+    return isPro;
   } catch (e) {
     // Check for the specific "browser environment" error to provide better feedback
     if (e?.message?.includes('browser environment') || e?.message?.includes('document is not available')) {
@@ -415,6 +557,7 @@ export async function presentPaywall() {
     } else {
       console.error('Paywall error:', e);
     }
+    safeTrack('rc_paywall_open_failed', { reason: e?.message || 'paywall_error' });
     return false;
   }
 }

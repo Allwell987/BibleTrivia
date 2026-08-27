@@ -103,6 +103,11 @@ cd android && ./gradlew bundleRelease
 - [x] Expo dependencies deduplicated and up-to-date
 - [x] Unit tests for all major components (coverage >70%)
 - [x] Firebase credentials and Auth client IDs configured
+- [ ] RevenueCat production keys set for iOS and Android
+- [ ] EXPO_PUBLIC_USE_MOCK_PURCHASES set to false for release
+- [ ] RevenueCat offering created and marked current (includes Pro + coin products)
+- [ ] Entitlement name exactly matches: Bible Trivia Pro
+- [ ] iOS and Android product IDs in RevenueCat match store products exactly
 - [ ] Test on physical devices (not just simulator/emulator)
 - [ ] Test on iPhone (iOS 14+) and Android (API 21+)
 - [ ] Review all text for typos

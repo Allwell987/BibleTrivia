@@ -6,9 +6,17 @@ import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 import { updateSetting, loadSettings, resetStats, resetAchievements } from '../utils/storage';
 import { getAnalyticsEvents, clearAnalyticsEvents, trackEvent } from '../utils/analytics';
-import { presentCustomerCenter } from '../utils/purchases';
+import {
+  presentCustomerCenter,
+  getCustomerInfo,
+  getAvailableCoinPackages,
+  getProOfferings,
+  getPurchaseHistory,
+} from '../utils/purchases';
 import { setHapticsEnabled } from '../utils/haptics';
 import { setSoundsEnabled } from '../utils/sounds';
+import { isAdsAvailable } from '../utils/ads';
+import { getMissingStartupConfigKeys, getStartupConfigWarnings } from '../utils/configHealth';
 
 const TIMER_OPTIONS = [10, 15, 20, 30];
 const PRIVACY_URL = 'https://your-domain.com/privacy-policy';
@@ -30,6 +38,9 @@ export default function SettingsScreen({ navigation }) {
   const [analyticsEvents, setAnalyticsEvents] = useState([]);
   const [analyticsKPIs, setAnalyticsKPIs] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showRevenueCatDiagnostics, setShowRevenueCatDiagnostics] = useState(false);
+  const [revenueCatDiagnostics, setRevenueCatDiagnostics] = useState(null);
+  const [revenueCatDiagnosticsLoading, setRevenueCatDiagnosticsLoading] = useState(false);
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -122,6 +133,59 @@ export default function SettingsScreen({ navigation }) {
     });
   };
 
+  const describeKeyState = (key) => {
+    if (!key) return 'missing';
+    if (key.includes('YOUR_')) return 'placeholder';
+    if (key.startsWith('test_')) return 'test_key';
+    return 'looks_live';
+  };
+
+  const refreshRevenueCatDiagnostics = async () => {
+    setRevenueCatDiagnosticsLoading(true);
+    try {
+      const [customerInfo, coinPackages, proPackages, purchaseHistory] = await Promise.all([
+        getCustomerInfo(),
+        getAvailableCoinPackages(),
+        getProOfferings(),
+        getPurchaseHistory(),
+      ]);
+
+      const allMissing = getMissingStartupConfigKeys();
+      const allWarnings = getStartupConfigWarnings();
+
+      const relevantMissingKeys = allMissing.filter((key) =>
+        key.includes('REVENUECAT') || key === 'EXPO_PUBLIC_USE_MOCK_PURCHASES'
+      );
+
+      const relevantWarnings = allWarnings.filter((warning) =>
+        warning.includes('REVENUECAT') || warning.includes('MOCK_PURCHASES')
+      );
+
+      const iosKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || '';
+      const androidKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || '';
+
+      setRevenueCatDiagnostics({
+        refreshedAt: new Date().toISOString(),
+        useMockPurchases: process.env.EXPO_PUBLIC_USE_MOCK_PURCHASES === 'true',
+        iosKeyState: describeKeyState(iosKey),
+        androidKeyState: describeKeyState(androidKey),
+        missingKeys: relevantMissingKeys,
+        warnings: relevantWarnings,
+        hasCustomerInfo: !!customerInfo,
+        proEntitlementActive: !!customerInfo?.entitlements?.active?.['Bible Trivia Pro'],
+        coinPackageCount: coinPackages.length,
+        proPackageCount: proPackages.length,
+        purchaseHistoryCount: purchaseHistory.length,
+      });
+    } catch (error) {
+      setRevenueCatDiagnostics({
+        error: error?.message || 'diagnostics_failed',
+      });
+    } finally {
+      setRevenueCatDiagnosticsLoading(false);
+    }
+  };
+
   const openPrivacyPolicy = () => {
     if (PRIVACY_URL.includes('your-domain.com')) {
       Alert.alert(
@@ -201,7 +265,7 @@ export default function SettingsScreen({ navigation }) {
                 {progress.isPro ? '👑 Bible Trivia Pro' : '💎 Upgrade to Pro'}
               </Text>
               <Text style={styles.rowDesc}>
-                {progress.isPro ? 'All premium features unlocked' : 'Remove ads and get unlimited hints'}
+                {progress.isPro ? 'All premium features unlocked' : (isAdsAvailable ? 'Remove ads and get unlimited hints' : 'Get unlimited hints')}
               </Text>
             </View>
             <Text style={{ color: colors.primary, fontWeight: '600' }}>
@@ -399,6 +463,69 @@ export default function SettingsScreen({ navigation }) {
                 )}
               </View>
             )}
+
+            <TouchableOpacity
+              style={styles.linkBtn}
+              onPress={async () => {
+                const nextValue = !showRevenueCatDiagnostics;
+                setShowRevenueCatDiagnostics(nextValue);
+                if (nextValue && !revenueCatDiagnostics) {
+                  await refreshRevenueCatDiagnostics();
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle RevenueCat diagnostics"
+            >
+              <Text style={styles.linkText}>
+                {showRevenueCatDiagnostics ? 'Hide RevenueCat Diagnostics' : 'Show RevenueCat Diagnostics'}
+              </Text>
+            </TouchableOpacity>
+
+            {showRevenueCatDiagnostics && (
+              <View style={styles.analyticsBox}>
+                <View style={styles.analyticsHeaderRow}>
+                  <Text style={styles.analyticsTitle}>RevenueCat Readiness</Text>
+                  <TouchableOpacity style={styles.analyticsBtn} onPress={refreshRevenueCatDiagnostics}>
+                    <Text style={styles.analyticsBtnText}>{revenueCatDiagnosticsLoading ? 'Loading...' : 'Refresh'}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {revenueCatDiagnostics?.error ? (
+                  <Text style={styles.rcErrorText}>Diagnostics error: {revenueCatDiagnostics.error}</Text>
+                ) : (
+                  <>
+                    <Text style={styles.rcRow}>Mock purchases: {String(revenueCatDiagnostics?.useMockPurchases)}</Text>
+                    <Text style={styles.rcRow}>iOS key state: {revenueCatDiagnostics?.iosKeyState || 'unknown'}</Text>
+                    <Text style={styles.rcRow}>Android key state: {revenueCatDiagnostics?.androidKeyState || 'unknown'}</Text>
+                    <Text style={styles.rcRow}>Missing env keys: {revenueCatDiagnostics?.missingKeys?.length || 0}</Text>
+                    <Text style={styles.rcRow}>Config warnings: {revenueCatDiagnostics?.warnings?.length || 0}</Text>
+                    <Text style={styles.rcRow}>Customer info available: {String(revenueCatDiagnostics?.hasCustomerInfo)}</Text>
+                    <Text style={styles.rcRow}>Pro entitlement active: {String(revenueCatDiagnostics?.proEntitlementActive)}</Text>
+                    <Text style={styles.rcRow}>Pro packages found: {revenueCatDiagnostics?.proPackageCount || 0}</Text>
+                    <Text style={styles.rcRow}>Coin packages found: {revenueCatDiagnostics?.coinPackageCount || 0}</Text>
+                    <Text style={styles.rcRow}>Local purchase history: {revenueCatDiagnostics?.purchaseHistoryCount || 0}</Text>
+
+                    {(revenueCatDiagnostics?.missingKeys?.length || 0) > 0 && (
+                      <View style={styles.rcListBox}>
+                        <Text style={styles.rcListTitle}>Missing:</Text>
+                        {revenueCatDiagnostics.missingKeys.map((key) => (
+                          <Text key={key} style={styles.rcListItem}>• {key}</Text>
+                        ))}
+                      </View>
+                    )}
+
+                    {(revenueCatDiagnostics?.warnings?.length || 0) > 0 && (
+                      <View style={styles.rcListBox}>
+                        <Text style={styles.rcListTitle}>Warnings:</Text>
+                        {revenueCatDiagnostics.warnings.map((warning) => (
+                          <Text key={warning} style={styles.rcListItem}>• {warning}</Text>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+            )}
           </View>
         )}
 
@@ -534,4 +661,14 @@ const createStyles = (colors) => StyleSheet.create({
   },
   analyticsEventName: { fontSize: 12, color: colors.text, fontWeight: '600', marginBottom: 2 },
   analyticsEventMeta: { fontSize: 11, color: colors.textSecondary },
+  rcRow: { fontSize: 12, color: colors.text, marginBottom: 4 },
+  rcErrorText: { fontSize: 12, color: colors.error, marginBottom: 8 },
+  rcListBox: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+    paddingTop: 8,
+  },
+  rcListTitle: { fontSize: 12, color: colors.text, fontWeight: '600', marginBottom: 4 },
+  rcListItem: { fontSize: 11, color: colors.textSecondary, marginBottom: 2 },
 });

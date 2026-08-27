@@ -6,10 +6,15 @@
     "version": "1.0.0",
     "sdkVersion": "55.0.0",
     "ios": {
-      "bundleIdentifier": "com.iguruapp.bibletrivia"
+      "bundleIdentifier": "com.iguruapp.bibletrivia",
+      "buildNumber": "5"
     },
     "android": {
       "package": "com.bibletrivia.app"
+    },
+    "react-native-google-mobile-ads": {
+      "android_app_id": "ca-app-pub-2269638303600030~1530181074",
+      "ios_app_id": "ca-app-pub-2269638303600030~3719232270"
     },
     "plugins": [
       "expo-apple-authentication",
@@ -17,13 +22,17 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-2269638303600030~1530181074",
-          "iosAppId": "ca-app-pub-2269638303600030~3719232270"
+          "iosAppId": "ca-app-pub-2269638303600030~3719232270",
+          "android_app_id": "ca-app-pub-2269638303600030~1530181074",
+          "ios_app_id": "ca-app-pub-2269638303600030~3719232270"
         }
       ],
       "expo-secure-store",
       "expo-audio",
       "expo-video",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-asset",
+      "expo-font"
     ],
     "web": {
       "favicon": "./assets/icon.png"
@@ -31,6 +40,10 @@
     "extra": {
       "eas": {
         "projectId": "6bbd4f40-2fec-4ee4-a02f-968da7251d72"
+      },
+      "store": {
+        "privacyPolicyUrl": "https://github.com/Allwell987/BibleTrivia/blob/main/PRIVACY_POLICY.md",
+        "supportUrl": "https://github.com/Allwell987/BibleTrivia/issues"
       }
     },
     "owner": "allwell8966"

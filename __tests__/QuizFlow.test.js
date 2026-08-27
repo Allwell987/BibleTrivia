@@ -228,9 +228,8 @@ describe('Quiz flow', () => {
     act(() => {
       jest.advanceTimersByTime(650);
     });
-    await waitFor(() => {
-      expect(getByText('Continue')).toBeTruthy();
-    });
+
+    expect(getByText('Continue')).toBeTruthy();
 
     fireEvent.press(getByText('Continue'));
 

@@ -83,8 +83,8 @@ We may update this Privacy Policy from time to time. We will notify you of any c
 
 If you have any questions about this Privacy Policy or our privacy practices, please contact us:
 
-**Email**: [your-email@example.com]
-**Website**: [https://yourdomain.com]
+**Email**: [support@bibletrivia.app](mailto:support@bibletrivia.app)
+**Website**: [https://github.com/Allwell987/BibleTrivia](https://github.com/Allwell987/BibleTrivia)
 
 ---
 

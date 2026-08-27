@@ -47,8 +47,15 @@ export default function ShopScreen({ navigation }) {
         getProOfferings()
       ]);
       setPackages([...pros, ...coins]);
+      trackEvent('shop_offerings_loaded', {
+        pro_count: pros.length,
+        coin_count: coins.length,
+      });
     } catch (error) {
       console.error('Failed to load offerings:', error);
+      trackEvent('shop_offerings_load_failed', {
+        reason: error?.message || 'unknown_error',
+      });
       Alert.alert('Error', 'Failed to load store items. Please try again.');
     } finally {
       setLoading(false);
@@ -84,11 +91,23 @@ export default function ShopScreen({ navigation }) {
             [{ text: 'OK' }]
           );
         }
+      } else if (result.cancelled) {
+        // User closed native purchase sheet; this is expected and should stay silent.
+        trackEvent('shop_purchase_cancelled', { product_id: productId });
+        return;
       } else {
+        trackEvent('shop_purchase_failed', {
+          product_id: productId,
+          reason: result.error || 'unknown_error',
+        });
         Alert.alert('Purchase Failed', result.error || 'Please try again.');
       }
     } catch (error) {
       console.error('Purchase error:', error);
+      trackEvent('shop_purchase_failed', {
+        product_id: productId,
+        reason: error?.message || 'unexpected_error',
+      });
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setPurchasing(null);
@@ -108,19 +127,31 @@ export default function ShopScreen({ navigation }) {
           await addCoins(result.coinsRestored);
         }
 
+        trackEvent('shop_restore_completed', {
+          is_pro_restored: !!result.isProRestored,
+          coins_restored: result.coinsRestored || 0,
+        });
+
         if (result.isProRestored || result.coinsRestored > 0) {
           Alert.alert(
             'Purchases Restored',
             'Your previous purchases have been restored to your account.'
           );
         } else {
+          trackEvent('shop_restore_noop');
           Alert.alert('No Purchases to Restore', 'No previous purchases found.');
         }
       } else {
+        trackEvent('shop_restore_failed', {
+          reason: result.error || 'no_previous_purchases',
+        });
         Alert.alert('No Purchases to Restore', 'No previous purchases found.');
       }
     } catch (error) {
       console.error('Restore error:', error);
+      trackEvent('shop_restore_failed', {
+        reason: error?.message || 'unexpected_error',
+      });
       Alert.alert('Error', 'Failed to restore purchases. Please try again.');
     } finally {
       setRestoring(false);
@@ -215,7 +246,7 @@ export default function ShopScreen({ navigation }) {
           <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Unlock Bible Trivia Pro</Text>
             <View style={[styles.proFeaturesBox, { backgroundColor: colors.card, borderColor: colors.accent }]}>
-              <Text style={[styles.featureItem, { color: colors.text }]}>✅ No Ads</Text>
+              {isAdsAvailable && <Text style={[styles.featureItem, { color: colors.text }]}>✅ No Ads</Text>}
               <Text style={[styles.featureItem, { color: colors.text }]}>✅ Unlimited Hints</Text>
               <Text style={[styles.featureItem, { color: colors.text }]}>✅ Exclusive Journey Eras</Text>
               <Text style={[styles.featureItem, { color: colors.text }]}>✅ Support the Ministry</Text>

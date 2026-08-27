@@ -1,13 +1,17 @@
+const ENABLE_ADS = process.env.EXPO_PUBLIC_ENABLE_ADS === 'true';
+
 let adsModule = null;
 
-try {
-  adsModule = require('react-native-google-mobile-ads');
-} catch (error) {
-  const message = 'AdMob module unavailable in this build; rewarded ads disabled.';
-  if (__DEV__) {
-    console.log(message);
-  } else {
-    console.warn(message);
+if (ENABLE_ADS) {
+  try {
+    adsModule = require('react-native-google-mobile-ads');
+  } catch (error) {
+    const message = 'AdMob module unavailable in this build; rewarded ads disabled.';
+    if (__DEV__) {
+      console.log(message);
+    } else {
+      console.warn(message);
+    }
   }
 }
 
@@ -36,13 +40,13 @@ const interstitialAdUnitId = __DEV__ || isPlaceholderInterstitial
   ? (TestIds?.INTERSTITIAL || PROD_INTERSTITIAL_AD_UNIT_ID)
   : PROD_INTERSTITIAL_AD_UNIT_ID;
 
-export const rewarded = RewardedAd
+export const rewarded = ENABLE_ADS && RewardedAd
   ? RewardedAd.createForAdRequest(effectiveAdUnitId, {
       keywords: ['bible', 'christian', 'trivia', 'education'],
     })
   : null;
 
-export const interstitial = InterstitialAd
+export const interstitial = ENABLE_ADS && InterstitialAd
   ? InterstitialAd.createForAdRequest(interstitialAdUnitId, {
       keywords: ['bible', 'christian', 'trivia', 'education'],
     })

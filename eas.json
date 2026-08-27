@@ -1,10 +1,28 @@
 {
   "cli": {
-    "version": ">= 12.0.0"
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_USE_MOCK_PURCHASES": "false",
+        "EXPO_PUBLIC_ENABLE_ADS": "false",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBvD2-ShVgbSF--TZp5jTzTD0sCTh3_UqA",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "bibletriviaapp-d4b35.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "bibletriviaapp-d4b35",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "bibletriviaapp-d4b35.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "235374673682",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:235374673682:web:cfb1eb9b6ee9376e717dcb",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-KN5XEBFH5K",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "685609802482-hb10t95haj42hivbrgcl10vm9duunjus.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "685609802482-3mbinr5dnfe5nj3kvo4nrorh7sqrjk7p.apps.googleusercontent.com",
+        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_aeynMxVNBGheiPaHDfwWapYtWuU",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_OshBEHEqVlvtWxmgEydOzeklvFS"
+      },
       "ios": {
         "simulator": false
       },
@@ -13,7 +31,24 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_USE_MOCK_PURCHASES": "false",
+        "EXPO_PUBLIC_ENABLE_ADS": "false",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBvD2-ShVgbSF--TZp5jTzTD0sCTh3_UqA",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "bibletriviaapp-d4b35.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "bibletriviaapp-d4b35",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "bibletriviaapp-d4b35.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "235374673682",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:235374673682:web:cfb1eb9b6ee9376e717dcb",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-KN5XEBFH5K",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "685609802482-hb10t95haj42hivbrgcl10vm9duunjus.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "685609802482-3mbinr5dnfe5nj3kvo4nrorh7sqrjk7p.apps.googleusercontent.com",
+        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_aeynMxVNBGheiPaHDfwWapYtWuU",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_OshBEHEqVlvtWxmgEydOzeklvFS"
+      }
     }
   },
   "submit": {

@@ -1,3 +1,38 @@
+import { Animated } from 'react-native';
+
+const createAnimatedMock = () => ({
+  start: jest.fn((callback) => {
+    callback?.({ finished: true });
+    return true;
+  }),
+  stop: jest.fn(),
+  reset: jest.fn(),
+});
+
+Animated.timing = jest.fn(() => createAnimatedMock());
+Animated.spring = jest.fn(() => createAnimatedMock());
+Animated.sequence = jest.fn((animations) => ({
+  start: jest.fn((callback) => {
+    animations.forEach((animation) => animation?.start?.());
+    callback?.({ finished: true });
+    return true;
+  }),
+  stop: jest.fn(),
+  reset: jest.fn(),
+}));
+Animated.parallel = jest.fn((animations) => ({
+  start: jest.fn((callback) => {
+    animations.forEach((animation) => animation?.start?.());
+    callback?.({ finished: true });
+    return true;
+  }),
+  stop: jest.fn(),
+  reset: jest.fn(),
+}));
+Animated.delay = jest.fn(() => createAnimatedMock());
+Animated.loop = jest.fn(() => createAnimatedMock());
+Animated.stagger = jest.fn(() => createAnimatedMock());
+
 jest.mock('./src/context/AuthContext', () => ({
   useAuth: () => ({
     user: { uid: 'test-user-id', email: 'test@example.com' },
