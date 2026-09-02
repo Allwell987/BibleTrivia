@@ -25,6 +25,7 @@ const AuthContext = createContext();
 const GOOGLE_CLIENT_IDS = {
   iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
   androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
 };
 
 const isConfiguredClientId = (clientId) => clientId && !clientId.startsWith('YOUR_');
@@ -32,6 +33,8 @@ const isConfiguredClientId = (clientId) => clientId && !clientId.startsWith('YOU
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [authError, setAuthError] = useState(null);
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
   const lastUserIdRef = useRef(null);
 
@@ -93,8 +96,32 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (response?.type === 'success' && isGoogleSignInAvailable) {
       const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(auth, credential);
+      if (id_token) {
+        const credential = GoogleAuthProvider.credential(id_token);
+        signInWithCredential(auth, credential)
+          .catch((error) => {
+            console.error('Firebase Google Auth error:', error);
+            setAuthError(error.message || 'Firebase authentication failed');
+            trackEvent('auth_action_failed', { method: 'google', reason: 'firebase_error' });
+          })
+          .finally(() => {
+            setIsGoogleLoading(false);
+          });
+      } else {
+        console.error('Google Auth success but no id_token found');
+        setAuthError('Authentication failed: Missing ID token');
+        setIsGoogleLoading(false);
+        trackEvent('auth_action_failed', { method: 'google', reason: 'missing_token' });
+      }
+    } else if (response?.type === 'error' || response?.type === 'cancel') {
+      setIsGoogleLoading(false);
+      if (response.type === 'error') {
+        console.error('Google Auth error:', response.error);
+        setAuthError(response.error?.message || 'Google sign-in failed');
+        trackEvent('auth_action_failed', { method: 'google', reason: 'provider_error' });
+      } else {
+        trackEvent('auth_action_cancelled', { method: 'google' });
+      }
     }
   }, [response, isGoogleSignInAvailable]);
 
@@ -147,8 +174,22 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    trackEvent('auth_action_requested', { method: 'google' });
-    await promptAsync();
+    try {
+      setAuthError(null);
+      setIsGoogleLoading(true);
+      trackEvent('auth_action_requested', { method: 'google' });
+      const result = await promptAsync();
+
+      // If result is not success, it will be handled by the useEffect
+      if (result.type !== 'success') {
+        setIsGoogleLoading(false);
+      }
+    } catch (e) {
+      console.error('signInWithGoogle error:', e);
+      setAuthError(e.message || 'An unexpected error occurred');
+      setIsGoogleLoading(false);
+      trackEvent('auth_action_failed', { method: 'google', reason: 'prompt_error' });
+    }
   };
 
   const logout = async () => {
@@ -194,6 +235,8 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user,
       loading,
+      isGoogleLoading,
+      authError,
       signInWithApple,
       signInWithGoogle,
       logout,

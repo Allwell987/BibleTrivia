@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getEnvOrPlaceholder = (key, placeholder) => process.env[key] || placeholder;
@@ -31,5 +32,13 @@ export const auth = initializeAuth(app, {
 });
 
 export const db = getFirestore(app);
+
+// Initialize Analytics lazily as it might not be supported in all environments (e.g. non-browser)
+export let analytics = null;
+isSupported().then(supported => {
+  if (supported && isFirebaseConfigured) {
+    analytics = getAnalytics(app);
+  }
+});
 
 export default app;

@@ -16,7 +16,10 @@ import { setHapticsEnabled } from './src/utils/haptics';
 import { trackScreenView } from './src/utils/analytics';
 import { initializePurchases, identifyPurchasesUser } from './src/utils/purchases';
 import { initAds } from './src/utils/ads';
+import PlayGames from './src/utils/PlayGames';
 import { logStartupConfigHealth } from './src/utils/configHealth';
+import { AnimatedLoadingScreen, UpgradeWall } from './src/components';
+import { useProgress } from './src/context/ProgressContext';
 
 import HomeScreen from './src/screens/HomeScreen';
 import QuizScreen from './src/screens/QuizScreen';
@@ -44,45 +47,49 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 function AppNavigator() {
   const [isOnboard, setIsOnboard] = useState(null);
+  const { upgradeWallVisible, hideUpgradeWall } = useProgress();
 
   useEffect(() => {
     isOnboarded().then(setIsOnboard);
   }, []);
 
   if (isOnboard === null) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#0F0D0A', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#C9A84C" />
-      </View>
-    );
+    return <AnimatedLoadingScreen />;
   }
 
   return (
-    <Stack.Navigator
-      initialRouteName={isOnboard ? 'Home' : 'Onboarding'}
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ animation: 'fade' }} />
-      <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'fade' }} />
-      <Stack.Screen name="Journey" component={JourneyScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Collection" component={CollectionScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Reflections" component={ReflectionsScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Quiz" component={QuizScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Result" component={ResultScreen} options={{ animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Achievements" component={AchievementsScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Challenge" component={ChallengeScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Shop" component={ShopScreen} options={{ animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="CustomQuiz" component={CustomQuizScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Anagram" component={AnagramScreen} options={{ animation: 'slide_from_right' }} />
-    </Stack.Navigator>
+    <>
+      <Stack.Navigator
+        initialRouteName={isOnboard ? 'Home' : 'Onboarding'}
+        screenOptions={{ headerShown: false }}
+      >
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ animation: 'fade' }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'fade' }} />
+        <Stack.Screen name="Journey" component={JourneyScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Collection" component={CollectionScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Reflections" component={ReflectionsScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Quiz" component={QuizScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Result" component={ResultScreen} options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Achievements" component={AchievementsScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Challenge" component={ChallengeScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Shop" component={ShopScreen} options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="CustomQuiz" component={CustomQuizScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Anagram" component={AnagramScreen} options={{ animation: 'slide_from_right' }} />
+      </Stack.Navigator>
+      <UpgradeWall
+        visible={upgradeWallVisible}
+        onClose={hideUpgradeWall}
+      />
+    </>
   );
 }
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
+  const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
   const [boundaryKey, setBoundaryKey] = useState(0);
   const navigationRef = useNavigationContainerRef();
   const routeNameRef = useRef();
@@ -90,15 +97,21 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        await Promise.allSettled([
+        // Minimum time for animation
+        const minTime = new Promise(resolve => setTimeout(resolve, 2000));
+
+        const loadResources = Promise.allSettled([
           loadSounds().catch(e => console.warn('Failed to load sounds:', e)),
           initAds(),
           initializePurchases().catch(e => console.warn('Failed to initialize purchases:', e)),
+          PlayGames.signIn(),
           loadSettings().then(settings => {
             setHapticsEnabled(settings.hapticEnabled);
             setSoundsEnabled(settings.soundEnabled);
           }).catch(e => console.warn('Failed to load settings:', e))
         ]);
+
+        await Promise.all([minTime, loadResources]);
         logStartupConfigHealth();
       } catch (e) {
         console.error('Critical startup error:', e);
@@ -116,13 +129,18 @@ export default function App() {
 
   useEffect(() => {
     if (appIsReady) {
-      // Hide the splash screen once we are ready
+      // Hide the native splash screen immediately when ready
+      // The AnimatedLoadingScreen will still be visible if we return it below
       SplashScreen.hideAsync().catch(console.warn);
+
+      // Small delay to allow custom animation to fade out if desired
+      // For now, we just transition to the app
+      setSplashAnimationFinished(true);
     }
   }, [appIsReady]);
 
-  if (!appIsReady) {
-    return null;
+  if (!appIsReady || !splashAnimationFinished) {
+    return <AnimatedLoadingScreen />;
   }
 
   return (

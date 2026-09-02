@@ -34,6 +34,8 @@ export default function SettingsScreen({ navigation }) {
     isAppleAvailable,
     isFirebaseConfigured,
     isGoogleSignInAvailable,
+    isGoogleLoading,
+    authError,
   } = useAuth();
   const [settings, setSettings] = useState(null);
   const [analyticsEvents, setAnalyticsEvents] = useState([]);
@@ -43,6 +45,12 @@ export default function SettingsScreen({ navigation }) {
   const [revenueCatDiagnostics, setRevenueCatDiagnostics] = useState(null);
   const [revenueCatDiagnosticsLoading, setRevenueCatDiagnosticsLoading] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  useEffect(() => {
+    if (authError) {
+      Alert.alert('Authentication Error', authError);
+    }
+  }, [authError]);
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -287,11 +295,16 @@ export default function SettingsScreen({ navigation }) {
               )}
 
               <TouchableOpacity
-                style={[styles.googleBtn, !isGoogleSignInAvailable && styles.authBtnDisabled]}
+                style={[
+                  styles.googleBtn,
+                  (!isGoogleSignInAvailable || isGoogleLoading) && styles.authBtnDisabled
+                ]}
                 onPress={signInWithGoogle}
-                disabled={!isGoogleSignInAvailable}
+                disabled={!isGoogleSignInAvailable || isGoogleLoading}
               >
-                <Text style={styles.googleBtnText}>G Sign in with Google</Text>
+                <Text style={styles.googleBtnText}>
+                  {isGoogleLoading ? 'Signing in…' : 'G Sign in with Google'}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (

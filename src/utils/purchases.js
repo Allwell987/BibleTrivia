@@ -38,10 +38,21 @@ const PURCHASES_KEY = 'bible_trivia_purchases';
 
 const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK_PURCHASES === 'true';
 
-const MOCK_CUSTOMER_INFO = {
+let mockProState = process.env.EXPO_PUBLIC_MOCK_PRO === 'true';
+const mockListeners = new Set();
+
+const getMockCustomerInfo = () => ({
   entitlements: {
-    active: USE_MOCK && process.env.EXPO_PUBLIC_MOCK_PRO === 'true' ? { [ENTITLEMENT_ID]: {} } : {},
+    active: mockProState ? { [ENTITLEMENT_ID]: {} } : {},
   },
+});
+
+const notifyMockListeners = () => {
+  if (!USE_MOCK) return;
+  const info = getMockCustomerInfo();
+  mockListeners.forEach(onUpdate => {
+    onUpdate({ customerInfo: info, isPro: mockProState });
+  });
 };
 
 export const PRODUCT_CONFIG = {
@@ -176,8 +187,9 @@ export async function clearPurchasesUser() {
 export function subscribeToCustomerInfo(onUpdate) {
   try {
     if (USE_MOCK) {
-      setTimeout(() => onUpdate?.({ customerInfo: MOCK_CUSTOMER_INFO, isPro: hasProEntitlement(MOCK_CUSTOMER_INFO) }), 100);
-      return () => {};
+      mockListeners.add(onUpdate);
+      setTimeout(() => onUpdate?.({ customerInfo: getMockCustomerInfo(), isPro: mockProState }), 100);
+      return () => mockListeners.delete(onUpdate);
     }
     if (!isPurchasesAvailable()) return () => {};
 
@@ -203,7 +215,7 @@ export function subscribeToCustomerInfo(onUpdate) {
  */
 export async function checkProStatus() {
   try {
-    if (USE_MOCK) return hasProEntitlement(MOCK_CUSTOMER_INFO);
+    if (USE_MOCK) return mockProState;
     if (!isPurchasesAvailable()) return false;
     const customerInfo = await Purchases.getCustomerInfo();
     return hasProEntitlement(customerInfo);
@@ -215,7 +227,7 @@ export async function checkProStatus() {
 
 export async function getCustomerInfo() {
   try {
-    if (USE_MOCK) return MOCK_CUSTOMER_INFO;
+    if (USE_MOCK) return getMockCustomerInfo();
     if (!isPurchasesAvailable()) return null;
     return await Purchases.getCustomerInfo();
   } catch (e) {
@@ -371,6 +383,12 @@ export async function purchaseProduct(pkgOrId) {
       const config = PRODUCT_CONFIG[productId] || {};
       const isPro = !!config.isPro;
       const coins = config.coins || 0;
+
+      if (isPro) {
+        mockProState = true;
+        notifyMockListeners();
+      }
+
       await savePurchaseRecord({
         productId,
         transactionId: `mock_${Date.now()}`,
@@ -388,7 +406,7 @@ export async function purchaseProduct(pkgOrId) {
         success: true,
         isPro,
         coins,
-        customerInfo: MOCK_CUSTOMER_INFO,
+        customerInfo: getMockCustomerInfo(),
       };
     }
     if (!isPurchasesAvailable()) {
@@ -476,8 +494,8 @@ export async function restorePurchases() {
       safeTrack('rc_restore_succeeded', { mode: 'mock' });
       return {
         success: true,
-        isProRestored: hasProEntitlement(MOCK_CUSTOMER_INFO),
-        customerInfo: MOCK_CUSTOMER_INFO,
+        isProRestored: hasProEntitlement(getMockCustomerInfo()),
+        customerInfo: getMockCustomerInfo(),
         coinsRestored: 0,
       };
     }
@@ -512,35 +530,50 @@ export async function presentPaywall() {
   try {
     safeTrack('rc_paywall_open_started');
     if (USE_MOCK) {
-      Alert.alert('Mock Paywall', 'Select outcome:', [
-        { text: 'Upgrade Success', onPress: () => {} },
-        { text: 'Cancel', style: 'cancel' }
-      ]);
-      safeTrack('rc_paywall_open_succeeded', { mode: 'mock' });
-      return true; // Simplified mock
+      return new Promise((resolve) => {
+        Alert.alert('Mock Paywall', 'Select outcome:', [
+          {
+            text: 'Upgrade Success',
+            onPress: () => {
+              mockProState = true;
+              notifyMockListeners();
+              safeTrack('rc_paywall_open_succeeded', { upgraded: true, mode: 'mock' });
+              resolve(true);
+            }
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => {
+              safeTrack('rc_paywall_open_succeeded', { upgraded: false, mode: 'mock' });
+              resolve(false);
+            }
+          }
+        ]);
+      });
     }
     if (Platform.OS === 'web') {
       console.warn('RevenueCat Paywalls are not supported on web environment.');
       safeTrack('rc_paywall_open_failed', { reason: 'web_unsupported' });
-      return false;
+      return 'fallback';
     }
 
     if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
-      console.warn('RevenueCat Paywalls are not supported in Expo Go. Use a development build (npx expo run:ios/android) to test Paywalls.');
+      console.warn('RevenueCat Paywalls are not supported in Expo Go.');
       safeTrack('rc_paywall_open_failed', { reason: 'expo_go_unsupported' });
-      return false;
+      return 'fallback';
     }
 
     if (!RevenueCatUI || !isPurchasesAvailable()) {
       console.warn('RevenueCatUI or Purchases module not available.');
       safeTrack('rc_paywall_open_failed', { reason: 'module_unavailable' });
-      return false;
+      return 'fallback';
     }
 
     if (typeof RevenueCatUI.presentPaywall !== 'function') {
       console.warn('RevenueCatUI.presentPaywall is not a function.');
       safeTrack('rc_paywall_open_failed', { reason: 'missing_present_paywall' });
-      return false;
+      return 'fallback';
     }
 
     await RevenueCatUI.presentPaywall();

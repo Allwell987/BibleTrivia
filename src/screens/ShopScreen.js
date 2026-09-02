@@ -25,7 +25,7 @@ import { showRewardedAd, isAdsAvailable } from '../utils/ads';
 export default function ShopScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
-  const { progress, addCoins, setProStatus } = useProgress();
+  const { progress, addCoins, setProStatus, showUpgradeWall } = useProgress();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(null);
@@ -186,13 +186,18 @@ export default function ShopScreen({ navigation }) {
   const handlePaywallUpgrade = async () => {
     try {
       setPurchasing('paywall');
-      const upgraded = await presentPaywall();
-      if (upgraded) {
+      const result = await presentPaywall();
+
+      if (result === 'fallback') {
+        // Fallback to internal Upgrade Wall if native RC UI is not supported (e.g. Expo Go)
+        showUpgradeWall();
+      } else if (result === true) {
         await setProStatus(true);
         trackEvent('pro_upgrade', { source: 'paywall' });
         Alert.alert('Welcome to Pro! 👑', 'All pro features have been unlocked.');
       } else {
-        Alert.alert('Upgrade cancelled', 'You can upgrade anytime from the shop.');
+        // Cancelled or generic failure
+        trackEvent('paywall_closed', { upgraded: false });
       }
     } catch (error) {
       console.error('Paywall error:', error);

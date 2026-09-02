@@ -6,7 +6,6 @@ import { useAuth } from './AuthContext';
 import { CHARACTERS, BIBLE_BOOKS } from '../data/collectibles';
 import { ACHIEVEMENTS, getNewAchievements } from '../data/achievements';
 import { checkProStatus, subscribeToCustomerInfo, identifyPurchasesUser, clearPurchasesUser } from '../utils/purchases';
-
 const PROGRESS_KEY = 'bible_trivia_progress';
 
 const DEFAULT_PROGRESS = {
@@ -120,6 +119,8 @@ export const STREAK_MILESTONES = [
   { days: 40, name: "Wilderness Journey", icon: '🏜️' },
   { days: 120, name: "Acts Church Builder", icon: '⛪' },
 ];
+
+export const PRO_ERAS = new Set(['parables', 'acts', 'missions', 'letters', 'revelation']);
 
 export const DifficultyRequirements = {
   medium: {
@@ -248,6 +249,10 @@ export function ProgressProvider({ children }) {
   const { user } = useAuth();
   const [progress, setProgress] = useState(DEFAULT_PROGRESS);
   const [loading, setLoading] = useState(true);
+  const [upgradeWallVisible, setUpgradeWallVisible] = useState(false);
+
+  const showUpgradeWall = () => setUpgradeWallVisible(true);
+  const hideUpgradeWall = () => setUpgradeWallVisible(false);
 
   const persistProgressSnapshot = useCallback(async (snapshot) => {
     try {
@@ -816,6 +821,9 @@ export function ProgressProvider({ children }) {
       saveReflection,
       claimDailyReward,
       resetProgress,
+      showUpgradeWall,
+      hideUpgradeWall,
+      upgradeWallVisible,
     }}>
       {children}
     </ProgressContext.Provider>

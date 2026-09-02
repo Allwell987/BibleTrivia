@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { useProgress, ERA_ORDER, ERA_REQUIREMENTS, MASTERY_TIERS } from '../context/ProgressContext';
+import { useProgress, ERA_ORDER, ERA_REQUIREMENTS, MASTERY_TIERS, PRO_ERAS } from '../context/ProgressContext';
 import { ERAS } from '../data/questions';
 import useReducedMotion from '../hooks/useReducedMotion';
 
@@ -35,7 +35,7 @@ const ERA_DETAILS = {
 export default function JourneyScreen({ navigation }) {
   const { theme } = useTheme();
   const { colors } = theme;
-  const { progress } = useProgress();
+  const { progress, showUpgradeWall } = useProgress();
   const reducedMotion = useReducedMotion();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const lineDrawAnim = useRef(new Animated.Value(0)).current;
@@ -159,7 +159,11 @@ export default function JourneyScreen({ navigation }) {
                     ]}
                     onPress={() => {
                       if (isUnlocked) {
-                        navigation.navigate('Quiz', { difficulty: 'mixed', category: 'all', era: eraKey });
+                        if (PRO_ERAS.has(eraKey) && !progress.isPro) {
+                          showUpgradeWall();
+                        } else {
+                          navigation.navigate('Quiz', { difficulty: 'mixed', category: 'all', era: eraKey });
+                        }
                       } else {
                         Alert.alert('Locked', `Achieve Bronze mastery in ${ERAS[ERA_ORDER[index-1]]} to unlock this era.`);
                       }
@@ -185,6 +189,11 @@ export default function JourneyScreen({ navigation }) {
                         ]}>
                           {ERAS[eraKey]}
                         </Text>
+                        {PRO_ERAS.has(eraKey) && !progress.isPro && (
+                          <View style={[styles.proEraBadge, { backgroundColor: colors.accent }]}>
+                            <Text style={[styles.proEraText, { color: colors.background }]}>PRO</Text>
+                          </View>
+                        )}
                         {isUnlocked && (
                           <Animated.View
                             style={[
@@ -275,6 +284,16 @@ const createStyles = (colors) => StyleSheet.create({
   eraTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   eraName: { fontSize: 18, fontWeight: '800' },
   eraNameLocked: { color: colors.textMuted },
+  proEraBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  proEraText: {
+    fontSize: 9,
+    fontWeight: '900',
+  },
   masteryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   masteryText: { fontSize: 10, fontWeight: '800' },
   eraDesc: { fontSize: 13, color: colors.textSecondary, marginBottom: 12, fontWeight: '500' },
