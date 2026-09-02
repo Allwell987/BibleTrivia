@@ -14,6 +14,7 @@ import com.google.android.gms.games.PlayGamesSdk
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ExpoReactHostFactory
+import com.iguruapp.bibletrivia.PlayGamesPackage
 
 class MainApplication : Application(), ReactApplication {
 
