@@ -1,21 +1,12 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-ext {
-  buildToolsVersion = findProperty('buildToolsVersion') ?: "34.0.0"
-  minSdkVersion = findProperty('minSdkVersion')?.toInteger() ?: 24
-  compileSdkVersion = findProperty('compileSdkVersion')?.toInteger() ?: 34
-  targetSdkVersion = findProperty('targetSdkVersion')?.toInteger() ?: 34
-  ndkVersion = findProperty('ndkVersion') ?: "27.1.12297006"
-  kotlinVersion = findProperty('kotlinVersion') ?: "2.1.20"
-}
-
 buildscript {
   repositories {
     google()
     mavenCentral()
   }
   dependencies {
-    classpath('com.android.tools.build:gradle:8.13.2')
+    classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
   }
@@ -26,13 +17,6 @@ allprojects {
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
-  }
-  configurations.all {
-    resolutionStrategy {
-      force 'androidx.core:core:1.15.0'
-      force 'androidx.core:core-ktx:1.15.0'
-      force 'androidx.browser:browser:1.8.0'
-    }
   }
 }
 
