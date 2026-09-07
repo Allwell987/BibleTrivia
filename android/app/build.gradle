@@ -91,8 +91,8 @@ android {
     defaultConfig {
         applicationId 'com.iguruapp.bibletrivia'
         minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion 34
-        versionCode 20
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 30
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
