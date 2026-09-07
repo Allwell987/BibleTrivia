@@ -268,6 +268,17 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
+  const openPrivacyPolicy = () => {
+    if (PRIVACY_URL.includes('your-domain.com')) {
+      Alert.alert(
+        'Privacy policy unavailable',
+        'Add your production privacy policy URL before opening this link.'
+      );
+      return;
+    }
+    Linking.openURL(PRIVACY_URL);
+  };
+
   if (!settings) return null;
 
   const styles = createStyles(colors);
