@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.iguruapp.bibletrivia",
-      "versionCode": 51,
+      "versionCode": 52,
       "targetSdkVersion": 34,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
