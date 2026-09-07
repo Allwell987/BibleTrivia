@@ -1,10 +1,10 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 ext {
-  buildToolsVersion = findProperty('buildToolsVersion') ?: "35.0.0"
+  buildToolsVersion = findProperty('buildToolsVersion') ?: "34.0.0"
   minSdkVersion = findProperty('minSdkVersion')?.toInteger() ?: 24
-  compileSdkVersion = findProperty('compileSdkVersion')?.toInteger() ?: 35
-  targetSdkVersion = findProperty('targetSdkVersion')?.toInteger() ?: 35
+  compileSdkVersion = findProperty('compileSdkVersion')?.toInteger() ?: 34
+  targetSdkVersion = findProperty('targetSdkVersion')?.toInteger() ?: 34
   ndkVersion = findProperty('ndkVersion') ?: "27.1.12297006"
   kotlinVersion = findProperty('kotlinVersion') ?: "2.1.20"
 }
