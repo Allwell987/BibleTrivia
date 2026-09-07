@@ -9,7 +9,6 @@ import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
-import com.iguruapp.bibletrivia.BuildConfig
 import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {

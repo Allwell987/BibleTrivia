@@ -9,7 +9,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_USE_MOCK_PURCHASES": "false",
-        "EXPO_PUBLIC_ENABLE_ADS": "false",
+        "EXPO_PUBLIC_ENABLE_ADS": "true",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBvD2-ShVgbSF--TZp5jTzTD0sCTh3_UqA",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "bibletriviaapp-d4b35.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "bibletriviaapp-d4b35",
@@ -20,8 +20,10 @@
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "685609802482-hb10t95haj42hivbrgcl10vm9duunjus.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "685609802482-3mbinr5dnfe5nj3kvo4nrorh7sqrjk7p.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "685609802482-3mbinr5dnfe5nj3kvo4nrorh7sqrjk7p.apps.googleusercontent.com",
-        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
-        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
+        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID": "ca-app-pub-2269638303600030/6797255861",
+        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID_IOS": "ca-app-pub-2269638303600030/4228756679",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID": "ca-app-pub-2269638303600030/5699796612",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID_IOS": "ca-app-pub-2269638303600030/3709881923",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_aeynMxVNBGheiPaHDfwWapYtWuU",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_OshBEHEqVlvtWxmgEydOzeklvFS"
       },
@@ -37,7 +39,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_USE_MOCK_PURCHASES": "false",
-        "EXPO_PUBLIC_ENABLE_ADS": "false",
+        "EXPO_PUBLIC_ENABLE_ADS": "true",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBvD2-ShVgbSF--TZp5jTzTD0sCTh3_UqA",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "bibletriviaapp-d4b35.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "bibletriviaapp-d4b35",
@@ -48,8 +50,10 @@
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "685609802482-hb10t95haj42hivbrgcl10vm9duunjus.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "685609802482-3mbinr5dnfe5nj3kvo4nrorh7sqrjk7p.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "685609802482-3mbinr5dnfe5nj3kvo4nrorh7sqrjk7p.apps.googleusercontent.com",
-        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
-        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID": "ca-app-pub-3940256099942544/1033173712",
+        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID": "ca-app-pub-2269638303600030/6797255861",
+        "EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID_IOS": "ca-app-pub-2269638303600030/4228756679",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID": "ca-app-pub-2269638303600030/5699796612",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID_IOS": "ca-app-pub-2269638303600030/3709881923",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_aeynMxVNBGheiPaHDfwWapYtWuU",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_OshBEHEqVlvtWxmgEydOzeklvFS"
       }
@@ -63,7 +67,7 @@
         "ascAppId": "6796074637"
       },
       "android": {
-        "track": "internal"
+        "track": "alpha"
       }
     }
   }

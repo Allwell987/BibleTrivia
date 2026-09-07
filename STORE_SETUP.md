@@ -14,8 +14,8 @@
 - Keep mock purchases disabled for production builds.
 - Use production RevenueCat keys and real store product IDs.
 - The app currently expects these RevenueCat product identifiers:
-  - Pro monthly: com.iguruapp.bibletrivia.pro_monthly
-  - Pro yearly: com.iguruapp.bibletrivia.pro_yearly
+  - Pro monthly: iOS `com.iguruapp.bibletrivia.pro_monthly_v2`; Android `com.iguruapp.bibletrivia.pro_monthly_v2:monthly`
+  - Pro yearly: iOS `com.iguruapp.bibletrivia.pro_yearly_v2`; Android `com.iguruapp.bibletrivia.pro_yearly_v2:yearly`
   - Pro lifetime: com.iguruapp.bibletrivia.pro_lifetime
   - Coin packs: com.iguruapp.bibletrivia.coins_250, com.iguruapp.bibletrivia.coins_500, com.iguruapp.bibletrivia.coins_1200, com.iguruapp.bibletrivia.coins_3000, com.iguruapp.bibletrivia.coins_7500
 - Existing screenshots for submission are already present in the screenshots folder.

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, Alert, Modal, Dimensions, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, Alert, Modal, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { QUESTIONS, shuffleArray, ERAS } from '../data/questions';
 
@@ -14,7 +14,6 @@ import { vibrateOnCorrect, vibrateOnWrong, vibrateOnSelection } from '../utils/h
 import { trackEvent } from '../utils/analytics';
 import { showInterstitialAd } from '../utils/ads';
 
-const { width } = Dimensions.get('window');
 const DIFF_COLOR = { easy: '#4CAF82', medium: '#E6A817', hard: '#D95F4B', expert: '#9B59B6', mixed: '#C9A84C', all: '#C9A84C' };
 
 export function selectDidYouKnowCandidate({ wrongAnswers = [], questions = [], seenDidYouKnow = [] }) {
@@ -486,10 +485,10 @@ const createStyles = (colors) => StyleSheet.create({
   verseLabel: { fontSize: 9, fontWeight: '800', color: colors.warning, letterSpacing: 1, marginBottom: 4 },
   verseText: { fontSize: 15, fontWeight: '600', color: colors.text },
   powerUpsContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 15, borderTopWidth: 1, borderTopColor: colors.border },
-  powerUpBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+  powerUpBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', minWidth: 0, marginHorizontal: 4, paddingHorizontal: 8, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
   powerUpDisabled: { opacity: 0.5 },
   powerUpEmoji: { fontSize: 16, marginRight: 8 },
-  powerUpText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  powerUpText: { flexShrink: 1, fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   insightCard: { backgroundColor: colors.card, borderRadius: 24, padding: 30, width: '100%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
   resultStatus: { fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 20 },

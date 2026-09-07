@@ -97,6 +97,7 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
+        logStartupConfigHealth();
         // Minimum time for animation
         const minTime = new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -112,7 +113,6 @@ export default function App() {
         ]);
 
         await Promise.all([minTime, loadResources]);
-        logStartupConfigHealth();
       } catch (e) {
         console.error('Critical startup error:', e);
       } finally {

@@ -14,7 +14,16 @@
     "ios": {
       "bundleIdentifier": "com.iguruapp.bibletrivia",
       "buildNumber": "6",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.685609802482-hb10t95haj42hivbrgcl10vm9duunjus"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "package": "com.iguruapp.bibletrivia",

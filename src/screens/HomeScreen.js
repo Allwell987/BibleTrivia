@@ -1,15 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Animated, Dimensions, ScrollView, Alert, Easing, ImageBackground,
+  Animated, ScrollView, Alert, Easing, ImageBackground, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress, STREAK_MILESTONES } from '../context/ProgressContext';
 import { getDailyVerse } from '../data/questions';
 import useReducedMotion from '../hooks/useReducedMotion';
-
-const { width } = Dimensions.get('window');
 
 const DIFFICULTIES = [
   { key: 'easy', label: 'Easy', subtitle: 'Basic Bible knowledge', color: '#4CAF82', lightColor: '#E8F5E9', seconds: 15 },
@@ -19,6 +17,7 @@ const DIFFICULTIES = [
 ];
 
 export default function HomeScreen({ navigation }) {
+  const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const { colors } = theme;
   const { isUnlocked, progress, getStreakMilestone, claimDailyReward } = useProgress();
@@ -120,7 +119,7 @@ export default function HomeScreen({ navigation }) {
     };
   }, [claimDailyReward, progress.lastDailyReward]);
 
-  const styles = createStyles(colors);
+  const styles = createStyles(colors, width);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -389,7 +388,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const createStyles = (colors) => StyleSheet.create({
+const createStyles = (colors, width) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 30 },
   header: { alignItems: 'center', paddingTop: 20, marginBottom: 24 },
@@ -411,7 +410,7 @@ const createStyles = (colors) => StyleSheet.create({
   },
   plusIcon: { fontSize: 12, marginLeft: 6, color: colors.primary, fontWeight: '900' },
   eyebrow: { fontSize: 10, letterSpacing: 3, color: colors.primary, fontWeight: '800', marginBottom: 6 },
-  title: { fontSize: 42, fontWeight: '900', color: colors.text, letterSpacing: -0.5, marginBottom: 8 },
+  title: { fontSize: width < 360 ? 36 : 42, fontWeight: '900', color: colors.text, marginBottom: 8 },
   streakContainer: { alignItems: 'center', marginTop: 8 },
   streakBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.card, borderRadius: 24, borderWidth: 1, borderColor: colors.warning + '40', shadowColor: colors.warning, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   streakIcon: { fontSize: 16, marginRight: 8 },
@@ -451,19 +450,19 @@ const createStyles = (colors) => StyleSheet.create({
   divIcon: { color: colors.primary, fontSize: 14, marginHorizontal: 15 },
   chooseLabel: { fontSize: 11, letterSpacing: 2, color: colors.textMuted, fontWeight: '800', textTransform: 'uppercase', marginBottom: 16 },
   difficultyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  diffCard: { width: (width - 52) / 2, borderRadius: 20, overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  diffCard: { width: (width - 52) / 2, minWidth: 0, borderRadius: 20, overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
   diffCardLocked: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, opacity: 0.7 },
-  diffContent: { padding: 18, height: 110, justifyContent: 'space-between' },
+  diffContent: { padding: width < 360 ? 14 : 18, height: 110, justifyContent: 'space-between' },
   diffHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   diffLabel: { fontSize: 18, fontWeight: '900', color: '#FFF' },
   lockIcon: { fontSize: 16 },
   playIconSmall: { fontSize: 14, color: '#FFF', opacity: 0.8 },
-  diffSub: { fontSize: 11, color: '#FFF', opacity: 0.9, fontWeight: '600', lineHeight: 14 },
+  diffSub: { fontSize: width < 360 ? 10 : 11, color: '#FFF', opacity: 0.9, fontWeight: '600', lineHeight: 14, flexShrink: 1 },
   buttonRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   gridBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
   iconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   btnIcon: { fontSize: 18 },
-  btnText: { fontSize: 14, fontWeight: '700', color: colors.text },
+  btnText: { flex: 1, fontSize: width < 360 ? 12 : 14, fontWeight: '700', color: colors.text, flexShrink: 1 },
   settingsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, marginTop: 10, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
   settingsIcon: { fontSize: 18, marginRight: 10 },
   settingsText: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },

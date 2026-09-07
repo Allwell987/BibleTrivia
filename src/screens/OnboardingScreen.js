@@ -1,12 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
 import { setOnboarded } from '../utils/storage';
 import { requestNotificationPermission } from '../utils/notifications';
-
-const { width } = Dimensions.get('window');
 
 const SLIDES = [
   {
@@ -30,6 +28,7 @@ const SLIDES = [
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced'];
 
 export default function OnboardingScreen({ navigation }) {
+  const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const { colors } = theme;
   const { setKnowledgeLevel } = useProgress();
@@ -57,7 +56,7 @@ export default function OnboardingScreen({ navigation }) {
     navigation.replace('Quiz', { difficulty: 'mixed', seconds: 15, isDaily: true });
   };
 
-  const styles = createStyles(colors);
+  const styles = createStyles(colors, width);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -151,13 +150,13 @@ export default function OnboardingScreen({ navigation }) {
   );
 }
 
-const createStyles = (colors) => StyleSheet.create({
+const createStyles = (colors, width) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { alignItems: 'flex-end', paddingHorizontal: 20, paddingVertical: 16 },
   skipBtn: { padding: 8 },
   skipText: { color: colors.textSecondary, fontSize: 15 },
   scrollView: { flex: 1 },
-  slide: { width, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+  slide: { width, alignItems: 'center', justifyContent: 'center', paddingHorizontal: width < 360 ? 24 : 40 },
   icon: { fontSize: 80, marginBottom: 32 },
   title: { fontSize: 28, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 16 },
   description: { fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 30 },

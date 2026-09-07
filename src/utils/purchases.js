@@ -21,10 +21,10 @@ if (Platform.OS !== 'web') {
 }
 
 // NOTE: For production builds, use platform public SDK keys from RevenueCat dashboard.
-const REVENUECAT_API_KEY = Platform.select({
+const REVENUECAT_API_KEY = (Platform.select({
   ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || 'test_gxRnMpjvLZJXAQdYMWRxMUmUctc',
   android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || 'test_gxRnMpjvLZJXAQdYMWRxMUmUctc',
-});
+}) || '').trim();
 
 const isInvalidRevenueCatKey = (key) =>
   !key ||
@@ -35,6 +35,12 @@ const isInvalidRevenueCatKey = (key) =>
 // Product requirement: entitlement name should be exactly "Bible Trivia Pro".
 const ENTITLEMENT_ID = 'Bible Trivia Pro';
 const PURCHASES_KEY = 'bible_trivia_purchases';
+const PRO_MONTHLY_PRODUCT_ID = Platform.OS === 'android'
+  ? 'com.iguruapp.bibletrivia.pro_monthly_v2:monthly'
+  : 'com.iguruapp.bibletrivia.pro_monthly_v2';
+const PRO_YEARLY_PRODUCT_ID = Platform.OS === 'android'
+  ? 'com.iguruapp.bibletrivia.pro_yearly_v2:yearly'
+  : 'com.iguruapp.bibletrivia.pro_yearly_v2';
 
 const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK_PURCHASES === 'true';
 
@@ -61,12 +67,13 @@ export const PRODUCT_CONFIG = {
   'com.iguruapp.bibletrivia.coins_1200': { coins: 1200 },
   'com.iguruapp.bibletrivia.coins_3000': { coins: 3000 },
   'com.iguruapp.bibletrivia.coins_7500': { coins: 7500 },
-  'com.iguruapp.bibletrivia.pro_monthly': { isPro: true, packageType: 'monthly' },
-  'com.iguruapp.bibletrivia.pro_yearly': { isPro: true, packageType: 'yearly' },
+  [PRO_MONTHLY_PRODUCT_ID]: { isPro: true, packageType: 'monthly' },
+  [PRO_YEARLY_PRODUCT_ID]: { isPro: true, packageType: 'yearly' },
   'com.iguruapp.bibletrivia.pro_lifetime': { isPro: true, packageType: 'lifetime' },
 };
 
 let connectionInitialized = false;
+let isIdentified = false;
 
 const safeTrack = (name, params = {}) => {
   trackEvent(name, params).catch(() => {});
@@ -120,9 +127,23 @@ export async function initializePurchases(userId) {
     if (connectionInitialized) {
       if (userId) {
         await Purchases.logIn(String(userId));
+        isIdentified = true;
       }
       safeTrack('rc_init_succeeded', { mode: 'reused_session' });
       return true;
+    }
+
+    if (!REVENUECAT_API_KEY) {
+      console.error('⚠️ RevenueCat initialization blocked: REVENUECAT_API_KEY is empty.');
+      safeTrack('rc_init_failed', { reason: 'empty_api_key' });
+      return false;
+    }
+
+    const isFallbackKey = REVENUECAT_API_KEY.startsWith('test_');
+    const isNativeEnvironment = Constants.executionEnvironment !== ExecutionEnvironment.StoreClient && Platform.OS !== 'web';
+
+    if (isFallbackKey && isNativeEnvironment && !USE_MOCK) {
+      console.warn('⚠️ RevenueCat is using a fallback "test_" key in a native build. This will likely cause Error 23 unless configured in RevenueCat dashboard.');
     }
 
     if (!__DEV__ && isInvalidRevenueCatKey(REVENUECAT_API_KEY)) {
@@ -135,10 +156,20 @@ export async function initializePurchases(userId) {
       await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     }
 
+    const iosKeySeen = !!process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
+    const androidKeySeen = !!process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY;
+    console.log(`🔍 Environment keys present: iOS=${iosKeySeen}, Android=${androidKeySeen}`);
+
+    const maskedKey = REVENUECAT_API_KEY.length > 8
+      ? `${REVENUECAT_API_KEY.substring(0, 4)}...${REVENUECAT_API_KEY.substring(REVENUECAT_API_KEY.length - 4)}`
+      : '****';
+
+    console.log(`🚀 Configuring RevenueCat with key: ${maskedKey}`);
     await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
 
     if (userId) {
       await Purchases.logIn(String(userId));
+      isIdentified = true;
     }
 
     connectionInitialized = true;
@@ -164,6 +195,7 @@ export async function identifyPurchasesUser(userId) {
       return;
     }
     await Purchases.logIn(String(userId));
+    isIdentified = true;
     safeTrack('rc_user_identified', { has_user: true });
   } catch (e) {
     console.error('RevenueCat logIn failed:', e?.message || e);
@@ -176,11 +208,18 @@ export async function clearPurchasesUser() {
     if (USE_MOCK) return;
     if (!isPurchasesAvailable()) return;
     if (!connectionInitialized) return;
-    await Purchases.logOut();
+
+    // Only log out if we actually logged in (identified)
+    // This avoids the "LogOut was called but the current user is anonymous" error on startup
+    if (isIdentified) {
+      await Purchases.logOut();
+      isIdentified = false;
+    }
+
     safeTrack('rc_user_cleared');
   } catch (e) {
     console.error('RevenueCat logOut failed:', e?.message || e);
-    safeTrack('rc_user_clear_failed', { reason: e?.message || 'unknown_error' });
+    safeTrack('rc_user_clear_failed', { reason: e?.message || e });
   }
 }
 
@@ -255,7 +294,18 @@ export async function getOfferings() {
     safeTrack('rc_offerings_fetch_empty', { source: 'all', reason: 'no_current_offering' });
     return [];
   } catch (e) {
-    console.error('Error fetching offerings:', e);
+    if (e?.code === '23' || e?.readable_error_code === 'CONFIGURATION_ERROR') {
+      console.warn(
+        '❌ RevenueCat Configuration Error (23): Offerings could not be fetched.\n' +
+        '1. Ensure the "Paid Applications Agreement" is signed in App Store Connect.\n' +
+        '2. Verify that products are in "Ready to Submit" or "Approved" state.\n' +
+        '3. If using the simulator, ensure a StoreKit Configuration file is active in Xcode Scheme settings.\n' +
+        '4. Set EXPO_PUBLIC_USE_MOCK_PURCHASES=true in .env to bypass this for local UI testing.'
+      );
+    } else {
+      console.error('Error fetching offerings:', e);
+    }
+
     safeTrack('rc_offerings_fetch_failed', {
       source: 'all',
       reason: e?.message || 'unknown_error',
@@ -275,6 +325,20 @@ const isProPackage = (pkg) => {
   );
 };
 
+const getDirectProducts = async (productIds) => {
+  if (typeof Purchases.getProducts !== 'function') return [];
+
+  const products = await Purchases.getProducts(productIds);
+  return products.map((product) => ({
+    productId: product.identifier,
+    title: product.title,
+    price: product.priceString,
+    coins: PRODUCT_CONFIG[product.identifier]?.coins || 0,
+    packageId: product.identifier.split('.').pop(),
+    storeProduct: product,
+  }));
+};
+
 /**
  * Helper for ShopScreen to get pro offerings specifically
  */
@@ -282,8 +346,8 @@ export async function getProOfferings() {
   try {
     if (USE_MOCK) {
       return [
-        { productId: 'com.iguruapp.bibletrivia.pro_monthly', title: 'Pro Monthly (Mock)', price: '$4.99', packageId: 'monthly' },
-        { productId: 'com.iguruapp.bibletrivia.pro_yearly', title: 'Pro Yearly (Mock)', price: '$29.99', packageId: 'yearly' },
+        { productId: PRO_MONTHLY_PRODUCT_ID, title: 'Pro Monthly (Mock)', price: '$4.99', packageId: 'monthly' },
+        { productId: PRO_YEARLY_PRODUCT_ID, title: 'Pro Yearly (Mock)', price: '$29.99', packageId: 'yearly' },
       ];
     }
     if (!isPurchasesAvailable()) return [];
@@ -307,12 +371,24 @@ export async function getProOfferings() {
           package_count: proPackages.length,
         });
       }
-      return proPackages;
+      if (proPackages.length > 0) return proPackages;
     }
-    safeTrack('rc_offerings_fetch_empty', { source: 'pro', reason: 'no_current_offering' });
-    return [];
+    const directProducts = await getDirectProducts([
+      PRO_MONTHLY_PRODUCT_ID,
+      PRO_YEARLY_PRODUCT_ID,
+      'com.iguruapp.bibletrivia.pro_lifetime',
+    ]);
+    safeTrack('rc_offerings_fetch_empty', { source: 'pro', reason: 'direct_product_fallback' });
+    return directProducts;
   } catch (e) {
-    console.error('Error fetching pro offerings:', e);
+    if (e?.code === '23' || e?.readable_error_code === 'CONFIGURATION_ERROR') {
+      console.warn(
+        '❌ RevenueCat Configuration Error (23): Pro offerings could not be fetched.\n' +
+        'Check App Store Connect Paid Applications Agreement and product status.'
+      );
+    } else {
+      console.error('Error fetching pro offerings:', e);
+    }
     safeTrack('rc_offerings_fetch_failed', {
       source: 'pro',
       reason: e?.message || 'unknown_error',
@@ -354,12 +430,26 @@ export async function getAvailableCoinPackages() {
           package_count: coinPackages.length,
         });
       }
-      return coinPackages;
+      if (coinPackages.length > 0) return coinPackages;
     }
-    safeTrack('rc_offerings_fetch_empty', { source: 'coins', reason: 'no_current_offering' });
-    return [];
+    const directProducts = await getDirectProducts([
+      'com.iguruapp.bibletrivia.coins_250',
+      'com.iguruapp.bibletrivia.coins_500',
+      'com.iguruapp.bibletrivia.coins_1200',
+      'com.iguruapp.bibletrivia.coins_3000',
+      'com.iguruapp.bibletrivia.coins_7500',
+    ]);
+    safeTrack('rc_offerings_fetch_empty', { source: 'coins', reason: 'direct_product_fallback' });
+    return directProducts;
   } catch (e) {
-    console.error('Error fetching coin packages:', e);
+    if (e?.code === '23' || e?.readable_error_code === 'CONFIGURATION_ERROR') {
+      console.warn(
+        '❌ RevenueCat Configuration Error (23): Coin packages could not be fetched.\n' +
+        'Check App Store Connect Paid Applications Agreement and product status.'
+      );
+    } else {
+      console.error('Error fetching coin packages:', e);
+    }
     safeTrack('rc_offerings_fetch_failed', {
       source: 'coins',
       reason: e?.message || 'unknown_error',
@@ -426,6 +516,8 @@ export async function purchaseProduct(pkgOrId) {
       purchaseResult = await Purchases.purchaseStoreProduct(pkgOrId);
     } else if (pkgOrId?.package) {
       purchaseResult = await Purchases.purchasePackage(pkgOrId.package);
+    } else if (pkgOrId?.storeProduct) {
+      purchaseResult = await Purchases.purchaseStoreProduct(pkgOrId.storeProduct);
     } else {
       purchaseResult = await Purchases.purchasePackage(pkgOrId);
     }

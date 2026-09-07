@@ -160,7 +160,7 @@ Build notes (Mar 31, 2026):
 ## Phase 4: App Configuration 📱
 
 ### Update app.json
-- [x] Add the following plugin config:
+- [x] Add the following plugin config: (⚠️ **NEEDS VERIFICATION** - Run `npm run prebuild:clean` after update)
 
 ```json
 {
@@ -190,7 +190,7 @@ Build notes (Mar 31, 2026):
 }
 ```
 
-- [x] Run `expo prebuild --clean` (if not already done)
+- [x] Run `npm run prebuild:clean` (mandatory after plugin changes)
 - [x] Verify no prebuild errors
 - [x] Add `eas.json` with `preview` and `production` build profiles
 - [x] Switch purchase mock mode to env toggle (`EXPO_PUBLIC_USE_MOCK_PURCHASES=true` for local mocks)

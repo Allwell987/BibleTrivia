@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 const ENABLE_ADS = process.env.EXPO_PUBLIC_ENABLE_ADS === 'true';
 
 let adsModule = null;
@@ -15,7 +17,11 @@ if (ENABLE_ADS) {
   }
 }
 
-const PROD_REWARDED_AD_UNIT_ID = process.env.EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID || 'your-real-ad-unit-id';
+const PROD_REWARDED_AD_UNIT_ID = Platform.select({
+  ios: process.env.EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID_IOS,
+  android: process.env.EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID,
+  default: process.env.EXPO_PUBLIC_ADMOB_REWARDED_AD_UNIT_ID,
+}) || 'your-real-ad-unit-id';
 const isPlaceholderAdUnit =
   !PROD_REWARDED_AD_UNIT_ID ||
   PROD_REWARDED_AD_UNIT_ID.includes('your-real-ad-unit-id');
@@ -25,6 +31,7 @@ const RewardedAd = adsModule?.RewardedAd;
 const RewardedAdEventType = adsModule?.RewardedAdEventType;
 const InterstitialAd = adsModule?.InterstitialAd;
 const AdEventType = adsModule?.AdEventType;
+const AdErrorEventType = AdEventType?.ERROR;
 
 // Use test IDs in development and as a guardrail when production IDs are not set.
 const adUnitId = __DEV__ || isPlaceholderAdUnit
@@ -33,7 +40,11 @@ const adUnitId = __DEV__ || isPlaceholderAdUnit
 
 const effectiveAdUnitId = __DEV__ && TestIds ? TestIds.REWARDED : adUnitId;
 
-const PROD_INTERSTITIAL_AD_UNIT_ID = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID || 'your-real-interstitial-id';
+const PROD_INTERSTITIAL_AD_UNIT_ID = Platform.select({
+  ios: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID_IOS,
+  android: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID,
+  default: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_AD_UNIT_ID,
+}) || 'your-real-interstitial-id';
 const isPlaceholderInterstitial = !PROD_INTERSTITIAL_AD_UNIT_ID || PROD_INTERSTITIAL_AD_UNIT_ID.includes('your-real-interstitial-id');
 
 const interstitialAdUnitId = __DEV__ || isPlaceholderInterstitial
@@ -56,8 +67,12 @@ export const isAdsAvailable = !!rewarded;
 export const isInterstitialAvailable = !!interstitial;
 
 export const initAds = () => {
-  if (rewarded) rewarded.load();
-  if (interstitial) interstitial.load();
+  try {
+    if (rewarded) rewarded.load();
+    if (interstitial) interstitial.load();
+  } catch (error) {
+    if (__DEV__) console.warn('AdMob failed to start loading:', error?.message || error);
+  }
   return true;
 };
 
@@ -116,6 +131,12 @@ export const showRewardedAd = (onComplete) => {
     completeOnce(false, { reason: 'closed' });
   });
 
+  const unsubscribeError = AdErrorEventType
+    ? rewarded.addAdEventListener(AdErrorEventType, error => {
+        completeOnce(false, { reason: 'load_failed', error });
+      })
+    : () => {};
+
   // If already loaded, show it immediately
   if (rewarded.loaded) {
     rewarded.show();
@@ -127,5 +148,6 @@ export const showRewardedAd = (onComplete) => {
     unsubscribeLoaded();
     unsubscribeEarned();
     unsubscribeClosed();
+    unsubscribeError();
   };
 };

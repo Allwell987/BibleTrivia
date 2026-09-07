@@ -41,7 +41,9 @@ export function AuthProvider({ children }) {
   // Google Login Hook
   const [request, response, promptAsync] = Google.useAuthRequest({
     ...GOOGLE_CLIENT_IDS,
+    selectAccount: true,
   });
+
   const isGoogleSignInAvailable =
     isFirebaseConfigured &&
     Object.values(GOOGLE_CLIENT_IDS).every(isConfiguredClientId);
@@ -54,7 +56,7 @@ export function AuthProvider({ children }) {
         await identifyPurchasesUser(firebaseUser.uid);
 
         if (lastUserIdRef.current !== firebaseUser.uid) {
-          trackEvent('auth_state_changed', { state: 'signed_in' });
+          trackEvent('auth_state_changed', { state: 'signed_in', provider: firebaseUser.providerData[0]?.providerId });
         }
         lastUserIdRef.current = firebaseUser.uid;
       } else {
@@ -95,21 +97,30 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (response?.type === 'success' && isGoogleSignInAvailable) {
-      const { id_token } = response.params;
-      if (id_token) {
-        const credential = GoogleAuthProvider.credential(id_token);
+      const { id_token, authentication } = response.params;
+      const token = id_token || authentication?.idToken;
+
+      if (token) {
+        const credential = GoogleAuthProvider.credential(token);
         signInWithCredential(auth, credential)
+          .then(() => {
+            trackEvent('auth_action_success', { method: 'google' });
+          })
           .catch((error) => {
             console.error('Firebase Google Auth error:', error);
-            setAuthError(error.message || 'Firebase authentication failed');
-            trackEvent('auth_action_failed', { method: 'google', reason: 'firebase_error' });
+            let userMessage = 'Firebase authentication failed';
+            if (error.code === 'auth/invalid-credential') userMessage = 'Invalid Google credentials.';
+            if (error.code === 'auth/account-exists-with-different-credential') userMessage = 'An account already exists with this email using a different sign-in method.';
+
+            setAuthError(userMessage);
+            trackEvent('auth_action_failed', { method: 'google', reason: error.code || 'firebase_error' });
           })
           .finally(() => {
             setIsGoogleLoading(false);
           });
       } else {
-        console.error('Google Auth success but no id_token found');
-        setAuthError('Authentication failed: Missing ID token');
+        console.error('Google Auth success but no id_token found', response);
+        setAuthError('Authentication failed: Missing ID token from Google.');
         setIsGoogleLoading(false);
         trackEvent('auth_action_failed', { method: 'google', reason: 'missing_token' });
       }
@@ -127,6 +138,7 @@ export function AuthProvider({ children }) {
 
   const signInWithApple = async () => {
     try {
+      setAuthError(null);
       if (!isFirebaseConfigured) {
         Alert.alert(
           'Sign in unavailable',
@@ -137,7 +149,7 @@ export function AuthProvider({ children }) {
 
       const isAvailable = await AppleAuthentication.isAvailableAsync();
       if (!isAvailable) {
-        alert('Apple Authentication is not available on this device.');
+        Alert.alert('Unavailable', 'Apple Authentication is not available on this device.');
         trackEvent('auth_action_failed', { method: 'apple', reason: 'not_available' });
         return;
       }
@@ -150,6 +162,10 @@ export function AuthProvider({ children }) {
       });
 
       const { identityToken } = credential;
+      if (!identityToken) {
+        throw new Error('No identity token returned from Apple');
+      }
+
       const provider = new OAuthProvider('apple.com');
       const firebaseCredential = provider.credential({
         idToken: identityToken,
@@ -157,9 +173,11 @@ export function AuthProvider({ children }) {
 
       await signInWithCredential(auth, firebaseCredential);
       trackEvent('auth_action_requested', { method: 'apple' });
+      trackEvent('auth_action_success', { method: 'apple' });
     } catch (e) {
-      if (e.code !== 'ERR_CANCELED') {
-        console.error(e);
+      if (e.code !== 'ERR_CANCELED' && e.code !== 'ERR_REQUEST_CANCELED') {
+        console.error('Apple Sign-In Error:', e);
+        setAuthError(e.message || 'Apple Sign-In failed');
         trackEvent('auth_action_failed', { method: 'apple', reason: e.code || 'unknown_error' });
       }
     }
@@ -169,7 +187,7 @@ export function AuthProvider({ children }) {
     if (!isGoogleSignInAvailable) {
       Alert.alert(
         'Google Sign-In unavailable',
-        'Add your Firebase and Google OAuth client IDs to enable Google Sign-In.'
+        'Check your client IDs in .env. Both iOS and Android IDs are required for native builds.'
       );
       return;
     }
@@ -178,15 +196,16 @@ export function AuthProvider({ children }) {
       setAuthError(null);
       setIsGoogleLoading(true);
       trackEvent('auth_action_requested', { method: 'google' });
+
+      // For Google, we use the promptAsync which is handled by the useEffect hook
       const result = await promptAsync();
 
-      // If result is not success, it will be handled by the useEffect
       if (result.type !== 'success') {
         setIsGoogleLoading(false);
       }
     } catch (e) {
       console.error('signInWithGoogle error:', e);
-      setAuthError(e.message || 'An unexpected error occurred');
+      setAuthError(e.message || 'An unexpected error occurred during Google sign-in');
       setIsGoogleLoading(false);
       trackEvent('auth_action_failed', { method: 'google', reason: 'prompt_error' });
     }

@@ -94,6 +94,21 @@ try {
 
 ---
 
+### 4. **RevenueCat Error 23 – Configuration Error Diagnostics**
+
+**Files:** `App.js`, `src/utils/purchases.js`  
+**Problem:** RevenueCat purchases failed with Error 23 in native builds.  
+**Root Cause:** A combination of potentially missing environment variables during initialization and the SDK fallback to a `test_` key that isn't recognized by the native stores.  
+**Solution:** 
+- Moved `logStartupConfigHealth()` in `App.js` to run before SDK initialization to flag missing `.env` keys early.
+- Improved logging in `purchases.js` to verify environment variable presence and mask API keys for safe debugging.
+- Added a warning for `test_` fallback keys in native builds.
+- **Note:** The `react-native-purchases` Expo Config Plugin was tested but removed as the current version (10.5.0) caused a `PluginError` during prebuild; autolinking is used instead.
+
+**Testing:** ⚠️ Verification requires a fresh native build and checking logs for `🔍 Environment keys present`.
+
+---
+
 ## Validation Results
 
 ### Tests: ✅ All Passing
@@ -138,6 +153,14 @@ App.js (Root)
 - **Mock Mode:** Set `EXPO_PUBLIC_USE_MOCK_PURCHASES=true` in `.env` to force mock purchases regardless of IAP availability
 
 ---
+
+## Next Steps (Mandatory)
+
+1. **Verify Environment:** Ensure your `.env` file is present and run `npx expo start -c` to clear the bundler cache.
+2. **Native Rebuild:** 
+   - For iOS: `npm run ios`
+   - For Android: `npm run android`
+3. **Verify Error 23:** Attempt a purchase in a native build. Check the console for `🔍 Environment keys present: iOS=true, Android=true` to ensure the correct keys are reaching the SDK.
 
 ## Next Steps (Optional)
 
