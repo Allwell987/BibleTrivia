@@ -8,6 +8,7 @@ import { updateSetting, loadSettings, resetStats, resetAchievements } from '../u
 import { getAnalyticsEvents, clearAnalyticsEvents, trackEvent } from '../utils/analytics';
 import {
   presentCustomerCenter,
+  presentPaywall,
   getCustomerInfo,
   getAvailableCoinPackages,
   getProOfferings,
@@ -24,7 +25,7 @@ const PRIVACY_URL = 'https://your-domain.com/privacy-policy';
 export default function SettingsScreen({ navigation }) {
   const { theme, updateTheme } = useTheme();
   const { colors } = theme;
-  const { progress, resetProgress } = useProgress();
+  const { progress, resetProgress, showUpgradeWall, setProStatus } = useProgress();
   const {
     user,
     signInWithApple,
@@ -247,15 +248,24 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
-  const openPrivacyPolicy = () => {
-    if (PRIVACY_URL.includes('your-domain.com')) {
-      Alert.alert(
-        'Privacy policy unavailable',
-        'Add your production privacy policy URL before opening this link.'
-      );
+  const handleUpgradePress = async () => {
+    if (progress.isPro) {
+      presentCustomerCenter();
       return;
     }
-    Linking.openURL(PRIVACY_URL);
+
+    try {
+      const result = await presentPaywall();
+      if (result === 'fallback') {
+        showUpgradeWall();
+      } else if (result === true) {
+        await setProStatus(true);
+        Alert.alert('Welcome to Pro! 👑', 'All pro features have been unlocked.');
+      }
+    } catch (error) {
+      console.error('Settings upgrade error:', error);
+      navigation.navigate('Shop');
+    }
   };
 
   if (!settings) return null;
@@ -336,7 +346,7 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Subscription</Text>
           <TouchableOpacity
             style={styles.row}
-            onPress={() => navigation.navigate('Shop')}
+            onPress={handleUpgradePress}
           >
             <View style={styles.rowText}>
               <Text style={styles.rowLabel}>

@@ -13,7 +13,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.iguruapp.bibletrivia",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "supportsTablet": true,
       "infoPlist": {
         "CFBundleURLTypes": [
@@ -27,7 +27,8 @@
     },
     "android": {
       "package": "com.iguruapp.bibletrivia",
-      "versionCode": 6,
+      "versionCode": 7,
+      "targetSdkVersion": 34,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

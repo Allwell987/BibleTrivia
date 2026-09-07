@@ -136,57 +136,59 @@ export default function QuizScreen({ route, navigation }) {
   const handleFiftyFifty = async () => {
     if (selected || hiddenOptions.length > 0 || !hintsEnabled) return;
 
-    const cost = 50;
-    if (progress.coins < cost) {
-      Alert.alert(
-        'Not enough coins',
-        `You need ${cost} coins for 50/50.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Get Coins', onPress: () => navigation.navigate('Shop') }
-        ]
-      );
-      return;
+    if (!progress.isPro) {
+      const cost = 50;
+      if (progress.coins < cost) {
+        Alert.alert(
+          'Not enough coins',
+          `You need ${cost} coins for 50/50.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Get Coins', onPress: () => navigation.navigate('Shop') }
+          ]
+        );
+        return;
+      }
+      const success = await spendCoins(cost);
+      if (!success) return;
     }
 
-    const success = await spendCoins(cost);
-    if (success) {
-      playPowerup();
-      const incorrectOptions = current.options.filter(opt => opt !== current.answer);
-      const toHide = shuffleArray(incorrectOptions).slice(0, 2);
-      setHiddenOptions(toHide);
-      trackEvent('use_powerup', { type: '50_50', question: current.question });
-    }
+    playPowerup();
+    const incorrectOptions = current.options.filter(opt => opt !== current.answer);
+    const toHide = shuffleArray(incorrectOptions).slice(0, 2);
+    setHiddenOptions(toHide);
+    trackEvent('use_powerup', { type: '50_50', question: current.question, is_pro: progress.isPro });
   };
 
   const handleRevealVerse = async () => {
     if (selected || showVerse || !hintsEnabled) return;
 
-    const cost = 25;
-    if (progress.coins < cost) {
-      Alert.alert(
-        'Not enough coins',
-        `You need ${cost} coins to reveal the verse.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Get Coins', onPress: () => navigation.navigate('Shop') }
-        ]
-      );
-      return;
+    if (!progress.isPro) {
+      const cost = 25;
+      if (progress.coins < cost) {
+        Alert.alert(
+          'Not enough coins',
+          `You need ${cost} coins to reveal the verse.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Get Coins', onPress: () => navigation.navigate('Shop') }
+          ]
+        );
+        return;
+      }
+      const success = await spendCoins(cost);
+      if (!success) return;
     }
 
-    const success = await spendCoins(cost);
-    if (success) {
-      playPowerup();
-      setShowVerse(true);
-      if (reducedMotion) {
-        powerupScale.setValue(1);
-      } else {
-        powerupScale.setValue(0);
-        Animated.spring(powerupScale, { toValue: 1, friction: 7, useNativeDriver: true }).start();
-      }
-      trackEvent('use_powerup', { type: 'reveal_verse', question: current.question });
+    playPowerup();
+    setShowVerse(true);
+    if (reducedMotion) {
+      powerupScale.setValue(1);
+    } else {
+      powerupScale.setValue(0);
+      Animated.spring(powerupScale, { toValue: 1, friction: 7, useNativeDriver: true }).start();
     }
+    trackEvent('use_powerup', { type: 'reveal_verse', question: current.question, is_pro: progress.isPro });
   };
 
   const buildDidYouKnow = () => {
@@ -419,23 +421,23 @@ export default function QuizScreen({ route, navigation }) {
       {!selected && hintsEnabled && (
         <View style={styles.powerUpsContainer}>
           <TouchableOpacity
-            style={[styles.powerUpBtn, (hiddenOptions.length > 0 || progress.coins < 50) && styles.powerUpDisabled]}
+            style={[styles.powerUpBtn, (hiddenOptions.length > 0 || (!progress.isPro && progress.coins < 50)) && styles.powerUpDisabled]}
             onPress={handleFiftyFifty}
             disabled={hiddenOptions.length > 0}
             activeOpacity={0.7}
           >
             <Text style={styles.powerUpEmoji}>🌓</Text>
-            <Text style={styles.powerUpText}>50/50 (50)</Text>
+            <Text style={styles.powerUpText}>50/50 {progress.isPro ? '(FREE)' : '(50)'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.powerUpBtn, (showVerse || progress.coins < 25) && styles.powerUpDisabled]}
+            style={[styles.powerUpBtn, (showVerse || (!progress.isPro && progress.coins < 25)) && styles.powerUpDisabled]}
             onPress={handleRevealVerse}
             disabled={showVerse}
             activeOpacity={0.7}
           >
             <Text style={styles.powerUpEmoji}>📖</Text>
-            <Text style={styles.powerUpText}>Verse (25)</Text>
+            <Text style={styles.powerUpText}>Verse {progress.isPro ? '(FREE)' : '(25)'}</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -268,15 +268,19 @@ export default function ShopScreen({ navigation }) {
                   purchasing === pkg.productId && styles.packageCardDisabled,
                 ]}
               >
-                <View style={styles.packageHeader}>
-                  <Text style={[styles.packageTitle, { color: colors.text }]}>{pkg.title}</Text>
-                  {pkg.productId.includes('yearly') && (
-                    <View style={[styles.bonusBadge, { backgroundColor: colors.accent }]}>
-                      <Text style={[styles.bonusText, { color: colors.background }]}>BEST VALUE</Text>
-                    </View>
-                  )}
+                <View style={[styles.packageHeader, { flex: 1 }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.packageTitle, { color: colors.text }]} numberOfLines={2}>
+                      {pkg.title}
+                    </Text>
+                    {pkg.productId.includes('yearly') && (
+                      <View style={[styles.bonusBadge, { backgroundColor: colors.accent, alignSelf: 'flex-start', marginLeft: 0, marginTop: 4 }]}>
+                        <Text style={[styles.bonusText, { color: colors.background }]}>BEST VALUE</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.packageFooter}>
+                <View style={[styles.packageFooter, { marginLeft: 12 }]}>
                   <Text style={[styles.price, { color: colors.accent }]}>{pkg.price}</Text>
                   {purchasing === pkg.productId ? (
                     <ActivityIndicator size="small" color={colors.accent} />
@@ -303,14 +307,18 @@ export default function ShopScreen({ navigation }) {
                 purchasing === 'paywall' && styles.packageCardDisabled,
               ]}
             >
-              <View style={styles.packageHeader}>
-                <Text style={[styles.packageTitle, { color: colors.text }]}>Upgrade with Paywall</Text>
-                <View style={[styles.bonusBadge, { backgroundColor: colors.accent }]}>
-                  <Text style={[styles.bonusText, { color: colors.background }]}>RECOMMENDED</Text>
+              <View style={[styles.packageHeader, { flex: 1 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.packageTitle, { color: colors.text }]} numberOfLines={2}>
+                    Upgrade with Paywall
+                  </Text>
+                  <View style={[styles.bonusBadge, { backgroundColor: colors.accent, alignSelf: 'flex-start', marginLeft: 0, marginTop: 4 }]}>
+                    <Text style={[styles.bonusText, { color: colors.background }]}>RECOMMENDED</Text>
+                  </View>
                 </View>
               </View>
-              <View style={styles.packageFooter}>
-                <Text style={[styles.price, { color: colors.textSecondary }]}>Monthly / Yearly / Lifetime</Text>
+              <View style={[styles.packageFooter, { marginLeft: 12 }]}>
+                <Text style={[styles.price, { color: colors.textSecondary }]}>All Options</Text>
                 {purchasing === 'paywall' ? (
                   <ActivityIndicator size="small" color={colors.accent} />
                 ) : (
@@ -336,16 +344,18 @@ export default function ShopScreen({ navigation }) {
                 adLoading && styles.packageCardDisabled,
               ]}
             >
-              <View style={styles.packageHeader}>
-                <View>
-                  <Text style={[styles.packageCoins, { color: '#4CAF50' }]}>25</Text>
-                  <Text style={[styles.packageLabel, { color: colors.textSecondary }]}>Coins</Text>
-                </View>
-                <View style={[styles.bonusBadge, { backgroundColor: '#4CAF50' }]}>
-                  <Text style={[styles.bonusText, { color: '#FFF' }]}>FREE</Text>
+              <View style={[styles.packageHeader, { flex: 1 }]}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.packageCoins, { color: '#4CAF50' }]}>25</Text>
+                    <Text style={[styles.packageLabel, { color: colors.textSecondary, marginLeft: 8 }]}>Coins</Text>
+                  </View>
+                  <View style={[styles.bonusBadge, { backgroundColor: '#4CAF50', alignSelf: 'flex-start', marginLeft: 0, marginTop: 4 }]}>
+                    <Text style={[styles.bonusText, { color: '#FFF' }]}>FREE</Text>
+                  </View>
                 </View>
               </View>
-              <View style={styles.packageFooter}>
+              <View style={[styles.packageFooter, { marginLeft: 12 }]}>
                 <Text style={[styles.price, { color: colors.text }]}>Watch Video</Text>
                 {adLoading ? (
                   <ActivityIndicator size="small" color="#4CAF50" />
@@ -381,28 +391,30 @@ export default function ShopScreen({ navigation }) {
               ]}
             >
               {/* Coin amount and bonus badge */}
-              <View style={styles.packageHeader}>
-                <View>
-                  <Text style={[styles.packageCoins, { color: colors.accent }]}>
-                    {pkg.coins.toLocaleString()}
-                  </Text>
-                  <Text style={[styles.packageLabel, { color: colors.textSecondary }]}>
-                    Coins
-                  </Text>
-                </View>
-                
-                {/* Bonus badge for larger packages */}
-                {pkg.coins >= 3000 && (
-                  <View style={[styles.bonusBadge, { backgroundColor: colors.accent }]}>
-                    <Text style={[styles.bonusText, { color: colors.background }]}>
-                      BEST VALUE
+              <View style={[styles.packageHeader, { flex: 1 }]}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.packageCoins, { color: colors.accent }]}>
+                      {pkg.coins.toLocaleString()}
+                    </Text>
+                    <Text style={[styles.packageLabel, { color: colors.textSecondary, marginLeft: 8 }]}>
+                      Coins
                     </Text>
                   </View>
-                )}
+
+                  {/* Bonus badge for larger packages */}
+                  {pkg.coins >= 3000 && (
+                    <View style={[styles.bonusBadge, { backgroundColor: colors.accent, alignSelf: 'flex-start', marginLeft: 0, marginTop: 4 }]}>
+                      <Text style={[styles.bonusText, { color: colors.background }]}>
+                        BEST VALUE
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
               {/* Price and button */}
-              <View style={styles.packageFooter}>
+              <View style={[styles.packageFooter, { marginLeft: 12 }]}>
                 <Text style={[styles.price, { color: colors.text }]}>
                   {pkg.price}
                 </Text>
